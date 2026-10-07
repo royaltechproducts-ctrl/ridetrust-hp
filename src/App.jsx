@@ -4,7 +4,27 @@ import { createClient } from "@supabase/supabase-js";
 const SB_URL = "https://zlaetfkeeuxvvxrdtbqq.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpsYWV0ZmtlZXV4dnZ4cmR0YnFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzOTEwMDIsImV4cCI6MjEwNjk2NzAwMn0.RsqkPXCnAl7M3mww8x3Sk4DIfYYOsv6TBv-3LqoOX40";
 const sb = createClient(SB_URL, SB_KEY);
-const ADMIN_PASS = "RideTrust@RoyalTech2026";
+const ADMIN_PASS   = "RideTrust@RoyalTech2026";
+const ADMIN_EMAIL  = "royaltechproducts@gmail.com";
+const ADMIN_PHONE  = "+234 909 999 4816";
+
+const genPassword = (prefix) => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = prefix;
+  for(let i=0;i<6;i++) code += chars[Math.floor(Math.random()*chars.length)];
+  return code;
+};
+
+const genReferralCode = (name) => {
+  const initials = name.trim().split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,3);
+  const rand = Math.floor(1000+Math.random()*9000);
+  return "RT-"+initials+rand;
+};
+
+const sendAdminEmail = async (subject, message) => {
+  // Log to console — in production wire to EmailJS or similar
+  console.log("ADMIN EMAIL:", subject, message);
+};
 
 // ── Design tokens ─────────────────────────────────────────────
 const C = {
@@ -232,10 +252,47 @@ export default function App(){
   const [loading,   setLoading]   = useState(false);
   const [ga4,       setGa4]       = useState(null);
   const [ga4Err,    setGa4Err]    = useState(null);
+  // Rider portal
+  const [riderPortal, setRiderPortal] = useState(null); // logged-in rider object
+  const [rPortalTab,  setRPortalTab]  = useState("overview");
+  const [guarantors,  setGuarantors]  = useState([]);
+  const [referrals,   setReferrals]   = useState([]);
+  const [gForm,       setGForm]       = useState({name:"",email:"",phone:""});
 
   const setF = (k,v) => setForm(f=>({...f,[k]:v}));
   const showToast = msg => { setToast(msg); setTimeout(()=>setToast(null),3500); };
   const navigate  = p => { window.location.href = "/#/"+p; };
+
+  const loadRiderPortal = async (rider) => {
+    setRiderPortal(rider);
+    setRPortalTab("overview");
+    const [g, r] = await Promise.all([
+      sb.from("rt_guarantors").select("*").eq("beneficiary_rider_id", rider.id),
+      sb.from("rt_referrals").select("*").eq("referrer_id", rider.id),
+    ]);
+    if(g.data) setGuarantors(g.data);
+    if(r.data) setReferrals(r.data);
+  };
+
+  const handleRiderLogin = async () => {
+    const emailVal = loginForm.email.trim().toLowerCase();
+    const passVal  = loginForm.password.trim();
+    if(!emailVal){ showToast("Please enter your email."); return; }
+    // Try email match first, then password match
+    let query = sb.from("rt_riders").select("*");
+    if(emailVal) query = query.ilike("email", emailVal);
+    const { data } = await query;
+    if(!data||data.length===0){ showToast("No account found with that email."); return; }
+    const rider = data[0];
+    // If password provided, verify it
+    if(passVal && rider.password !== passVal){ showToast("Incorrect password."); return; }
+    loadRiderPortal(rider);
+  };
+
+  const handleAdminLogin = () => {
+    if(loginForm.password === ADMIN_PASS){ setAdminOn(true); }
+    else { showToast("Incorrect password."); }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -273,14 +330,28 @@ export default function App(){
     }
     try {
       if(type==="rider-bike"||type==="rider-keke"){
-        await sb.from("rt_riders").insert({
+        const pwd  = genPassword("R");
+        const rcode = genReferralCode(form.name);
+        const { data: newRider } = await sb.from("rt_riders").insert({
           vehicle_type: type==="rider-bike"?"bike":"keke",
           full_name: form.name, phone: form.phone, email: form.email,
           address: form.address||null, experience: form.experience||null,
           referrer: form.referrer||null,
-          guarantor_1: form.g1||null, guarantor_2: form.g2||null, guarantor_3: form.g3||null,
           photo_id: form.photoId||null,
-        });
+          password: pwd,
+          referral_code: rcode,
+          referred_by: form.referrer||null,
+          app_status: "under_review",
+          rider_status: "not_committed",
+          hp_discount_balance: 0,
+        }).select().single();
+        // Admin notification email
+        const vType = type==="rider-bike"?"Dispatch Bike":"Keke Tricycle";
+        const waMsg = `New RideTrust ${vType} Application\n\nName: ${form.name}\nPhone: ${form.phone}\nEmail: ${form.email}\nAddress: ${form.address||"—"}\nExperience: ${form.experience||"—"}\nReferral Code: ${rcode}\n\nAction Required: Review ID and update application status.`;
+        await sendAdminEmail(
+          `New ${vType} Application — ${form.name}`,
+          `A new rider application has been submitted.\n\n${waMsg}\n\n---\nWHATSAPP TO: ${form.phone}\nMessage: Dear ${form.name}, your RideTrust HP application has been received. Your portal access:\nEmail: ${form.email}\nPassword: ${pwd}\n\nLog in at: tbvap.vercel.app\nYour referral code: ${rcode}\n\nRideTrust HP | RoyalTech`
+        );
       } else if(type==="lma"){
         await sb.from("rt_agents").insert({
           full_name: form.name, phone: form.phone, email: form.email,
@@ -300,16 +371,18 @@ export default function App(){
           notes: form.notes||null,
         });
       }
-      showToast("Application submitted! RoyalTech will contact you within 24 hours.");
+      showToast("Application submitted! Check your email for your portal access details.");
       setModal(null); setForm({});
     } catch(e) {
       showToast("Submission failed. Please try again."); 
     }
   };
 
-  const handleLogin = () => {
-    if(loginForm.password === ADMIN_PASS){ setAdminOn(true); }
-    else { showToast("Incorrect password."); }
+  const handleLogin = async () => {
+    const passVal = loginForm.password.trim();
+    if(passVal === ADMIN_PASS){ setAdminOn(true); return; }
+    // Try rider login
+    await handleRiderLogin();
   };
 
   return(
@@ -351,6 +424,245 @@ export default function App(){
                 <div><div className="int-label">Sign Up for Investment Without Stress</div><div className="int-sub">Put in capital. Receive returns. Zero operations.</div></div>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ RIDER PORTAL ═════════════════════════════════════ */}
+      {page==="access"&&riderPortal&&!adminOn&&(
+        <div style={{position:"fixed",inset:0,background:C.offwhite,zIndex:500,overflowY:"auto"}}>
+          {/* Nav */}
+          <div style={{background:C.black,padding:"0 20px",display:"flex",justifyContent:"space-between",alignItems:"center",height:56,position:"sticky",top:0,zIndex:10}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:C.white}}>
+              RIDE<span style={{color:C.orange}}>TRUST</span> <span style={{color:"#888",fontSize:12,fontWeight:400}}>MY PORTAL</span>
+            </div>
+            <button onClick={()=>{setRiderPortal(null);setLoginForm({email:"",password:""})}} style={{background:"#222",color:"#AAA",border:"none",padding:"6px 14px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Exit Portal</button>
+          </div>
+
+          {/* Tabs */}
+          <div style={{background:C.white,borderBottom:"2px solid "+C.lightgr,padding:"0 20px",display:"flex",gap:4,overflowX:"auto"}}>
+            {[
+              {k:"overview",   label:"📋 My Application"},
+              {k:"guarantors", label:"🤝 My Guarantors"},
+              {k:"guarantee",  label:"✅ Guarantee Someone"},
+              {k:"referrals",  label:"🎯 My Discounts"},
+            ].map(t=>(
+              <button key={t.k} onClick={()=>setRPortalTab(t.k)}
+                style={{padding:"14px 14px",background:"none",border:"none",
+                borderBottom:rPortalTab===t.k?"3px solid "+C.orange:"3px solid transparent",
+                fontWeight:rPortalTab===t.k?700:400,color:rPortalTab===t.k?C.black:C.grey,
+                fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{maxWidth:700,margin:"0 auto",padding:"24px 20px"}}>
+
+            {/* Overview tab */}
+            {rPortalTab==="overview"&&(
+              <div>
+                <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:16}}>
+                  <div style={{fontWeight:800,fontSize:16,color:C.black,marginBottom:4}}>Welcome, {riderPortal.full_name.split(" ")[0]}</div>
+                  <div style={{fontSize:12,color:C.grey,marginBottom:16}}>Referral Code: <strong style={{color:C.orange}}>{riderPortal.referral_code}</strong> — share this to earn discounts</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                    <div style={{background:C.offwhite,borderRadius:8,padding:14,textAlign:"center"}}>
+                      <div style={{fontSize:11,color:C.grey,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Application Status</div>
+                      <div style={{fontWeight:900,fontSize:14,color:riderPortal.app_status==="valid"?C.green:C.orange,textTransform:"uppercase"}}>
+                        {riderPortal.app_status==="under_review"?"Under Review":riderPortal.app_status==="valid"?"✅ Valid":"—"}
+                      </div>
+                    </div>
+                    <div style={{background:C.offwhite,borderRadius:8,padding:14,textAlign:"center"}}>
+                      <div style={{fontSize:11,color:C.grey,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Rider Status</div>
+                      <div style={{fontWeight:900,fontSize:12,color:riderPortal.rider_status==="not_committed"?C.grey:riderPortal.rider_status==="committed_applicant"?C.orange:C.green,textTransform:"uppercase"}}>
+                        {riderPortal.rider_status==="not_committed"?"Not Committed":
+                         riderPortal.rider_status==="committed_applicant"?
+                           (guarantors.filter(g=>g.status==="confirmed").length>=2?"Committed — Delivery Status Adequate":"Committed Applicant"):
+                         "Active Rider"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* HP Deal */}
+                <div style={{background:C.black,borderRadius:10,padding:20,color:C.white,marginBottom:16}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:14,textTransform:"uppercase"}}>
+                    {riderPortal.vehicle_type==="bike"?"🏍️ Dispatch Bike":"🛺 Keke Tricycle"} — Your HP Deal
+                  </div>
+                  {riderPortal.vehicle_type==="bike"?(<>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Initial deposit</span><strong style={{color:C.orange}}>₦200,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Weekly remittance</span><strong>₦28,000 / week</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>78 weeks</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.orange}}>₦2,384,000</strong></div>
+                  </>):(<>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Initial deposit</span><strong style={{color:C.green}}>₦500,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Weekly remittance</span><strong>₦60,000 / week</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>104 weeks</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.green}}>₦6,740,000</strong></div>
+                  </>)}
+                  {riderPortal.hp_discount_balance>0&&(
+                    <div style={{marginTop:12,background:"rgba(232,98,10,.2)",borderRadius:6,padding:"10px 12px",fontSize:12,color:C.orange}}>
+                      🎯 Referral discount earned: <strong>₦{riderPortal.hp_discount_balance.toLocaleString()}</strong> off your HP balance
+                    </div>
+                  )}
+                </div>
+
+                {/* Deposit instructions */}
+                {riderPortal.rider_status==="not_committed"&&(
+                  <div style={{background:"#FFF7ED",border:"1.5px solid #FCD34D",borderRadius:10,padding:20}}>
+                    <div style={{fontWeight:800,fontSize:14,color:"#92400E",marginBottom:10}}>Pay Your First Deposit to Become a Committed Applicant</div>
+                    <div style={{fontSize:13,color:"#92400E",lineHeight:1.8,marginBottom:12}}>
+                      {riderPortal.vehicle_type==="bike"?"Bike deposit: ₦200,000":"Keke deposit: ₦500,000"} — spread over 3 months max.
+                    </div>
+                    <div style={{fontSize:13,color:"#92400E",lineHeight:1.9}}>
+                      <strong>Account Name:</strong> RoyalTech Partnership & Investment Limited<br/>
+                      <strong>Bank:</strong> Zenith Bank<br/>
+                      <strong>Account Number:</strong> 1016621205<br/>
+                      <strong>Reference:</strong> {riderPortal.referral_code}
+                    </div>
+                    <div style={{marginTop:10,fontSize:11,color:"#B45309"}}>After payment, send proof via WhatsApp to {ADMIN_PHONE} with your referral code as reference.</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Guarantors tab */}
+            {rPortalTab==="guarantors"&&(
+              <div>
+                <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:16}}>
+                  <div style={{fontWeight:800,fontSize:15,marginBottom:4}}>My Guarantors</div>
+                  <div style={{fontSize:12,color:C.grey,marginBottom:16}}>You need a minimum of 2 confirmed guarantors before delivery.</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+                    {[0,1].map(i=>{
+                      const g = guarantors[i];
+                      return(
+                        <div key={i} style={{background:g?C.offwhite:"#F9F9F9",borderRadius:8,padding:14,border:"1.5px solid "+(g&&g.status==="confirmed"?C.green:C.lightgr),textAlign:"center"}}>
+                          <div style={{fontSize:24,marginBottom:6}}>{g&&g.status==="confirmed"?"✅":g?"⏳":"👤"}</div>
+                          <div style={{fontWeight:700,fontSize:13,color:g&&g.status==="confirmed"?C.green:C.grey}}>
+                            {g?g.guarantor_name:`Guarantor ${i+1} — Empty`}
+                          </div>
+                          {g&&<div style={{fontSize:11,color:C.grey,marginTop:2}}>{g.status==="confirmed"?"Confirmed":"Pending confirmation"}</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {guarantors.length<2&&(
+                    <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:8,padding:14,fontSize:13,color:C.blue,lineHeight:1.8}}>
+                      <strong>How to get guarantors:</strong><br/>
+                      1. Share your referral code <strong style={{color:C.orange}}>{riderPortal.referral_code}</strong> — anyone who signs up and pays their first deposit automatically becomes your guarantor.<br/>
+                      2. Ask an existing committed applicant or rider to go to their portal and fill the guarantor form with your details.
+                    </div>
+                  )}
+                </div>
+
+                {/* Referral invite */}
+                <div style={{background:C.black,borderRadius:10,padding:20,color:C.white}}>
+                  <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>🔗 Your Referral / Invite Link</div>
+                  <div style={{background:"#1A1A1A",borderRadius:6,padding:"10px 14px",fontSize:13,color:C.orange,fontFamily:"monospace",marginBottom:10,wordBreak:"break-all"}}>
+                    tbvap.vercel.app/#/ride?ref={riderPortal.referral_code}
+                  </div>
+                  <div style={{fontSize:12,color:"#AAA",lineHeight:1.7}}>
+                    Share this link. When someone signs up through it and pays their first deposit, they automatically become your guarantor AND you earn a referral discount on your HP balance.
+                  </div>
+                  <button onClick={()=>{navigator.clipboard.writeText("tbvap.vercel.app/#/ride?ref="+riderPortal.referral_code);showToast("Link copied!");}}
+                    style={{marginTop:12,background:C.orange,color:C.white,border:"none",padding:"10px 20px",borderRadius:6,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                    Copy Invite Link
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Guarantee Someone tab */}
+            {rPortalTab==="guarantee"&&(()=>{
+              const alreadyGuarantor = guarantors.some(g=>g.guarantor_rider_id===riderPortal.id&&g.status!=="rejected");
+              return(
+                <div>
+                  <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr}}>
+                    <div style={{fontWeight:800,fontSize:15,marginBottom:4}}>Guarantee Another Rider</div>
+                    <div style={{fontSize:12,color:C.grey,marginBottom:16,lineHeight:1.7}}>
+                      You can willingly serve as a guarantor for another rider on the platform — but only one at a time. Enter the exact name, email and phone the applicant used when they registered.
+                    </div>
+                    {alreadyGuarantor?(
+                      <div style={{background:"#FEF3C7",border:"1.5px solid #FCD34D",borderRadius:8,padding:14,fontSize:13,color:"#92400E"}}>
+                        ⚠️ You are already serving as a guarantor for another rider. You cannot guarantee a second applicant until your current commitment is complete or released.
+                      </div>
+                    ):(
+                      <>
+                        <div className="field"><label>Applicant Full Name *</label><input placeholder="Exact name as registered" value={gForm.name} onChange={e=>setGForm(f=>({...f,name:e.target.value}))}/></div>
+                        <div className="field"><label>Applicant Email *</label><input type="email" placeholder="Exact email as registered" value={gForm.email} onChange={e=>setGForm(f=>({...f,email:e.target.value}))}/></div>
+                        <div className="field"><label>Applicant Phone *</label><input type="tel" placeholder="Exact phone as registered" value={gForm.phone} onChange={e=>setGForm(f=>({...f,phone:e.target.value}))}/></div>
+                        <button style={{background:C.orange,color:C.white,border:"none",padding:"12px 24px",borderRadius:6,fontWeight:700,fontSize:14,cursor:"pointer",width:"100%",marginTop:8}}
+                          onClick={async()=>{
+                            if(!gForm.name.trim()||!gForm.email.trim()||!gForm.phone.trim()){showToast("Please fill all fields.");return;}
+                            // Find the applicant
+                            const {data:applicants} = await sb.from("rt_riders")
+                              .select("*")
+                              .ilike("email",gForm.email.trim())
+                              .ilike("phone",gForm.phone.trim());
+                            if(!applicants||applicants.length===0){showToast("No applicant found with those details. Please check and try again.");return;}
+                            const applicant = applicants[0];
+                            if(applicant.id===riderPortal.id){showToast("You cannot guarantee yourself.");return;}
+                            // Check applicant already has 2 guarantors
+                            const {data:existingG} = await sb.from("rt_guarantors").select("*").eq("beneficiary_rider_id",applicant.id).neq("status","rejected");
+                            if(existingG&&existingG.length>=2){showToast("This applicant already has 2 confirmed guarantors.");return;}
+                            // Submit guarantee
+                            await sb.from("rt_guarantors").insert({
+                              guarantor_rider_id: riderPortal.id,
+                              beneficiary_rider_id: applicant.id,
+                              guarantor_name: riderPortal.full_name,
+                              guarantor_email: riderPortal.email,
+                              guarantor_phone: riderPortal.phone,
+                              status: "pending",
+                            });
+                            setGForm({name:"",email:"",phone:""});
+                            showToast("Guarantee submitted successfully for "+applicant.full_name+". Thank you.");
+                          }}>
+                          Submit Guarantee
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Referral discounts tab */}
+            {rPortalTab==="referrals"&&(
+              <div>
+                <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:16}}>
+                  <div style={{fontWeight:800,fontSize:15,marginBottom:4}}>My Referral Discounts</div>
+                  <div style={{fontSize:12,color:C.grey,marginBottom:16}}>Total discount earned off your HP balance.</div>
+                  <div style={{background:C.orange,borderRadius:8,padding:16,textAlign:"center",marginBottom:16}}>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,.8)",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Total Discount Earned</div>
+                    <div style={{fontWeight:900,fontSize:32,color:C.white}}>₦{(riderPortal.hp_discount_balance||0).toLocaleString()}</div>
+                  </div>
+                  {referrals.length===0?(
+                    <div style={{fontSize:13,color:C.grey,textAlign:"center",padding:20}}>No referrals yet. Share your invite link to start earning discounts.</div>
+                  ):(
+                    referrals.map(r=>(
+                      <div key={r.id} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid "+C.lightgr,fontSize:13}}>
+                        <span style={{color:C.dark}}>{r.vehicle_type==="bike"?"🏍️ Bike referral":"🛺 Keke referral"}</span>
+                        <div style={{textAlign:"right"}}>
+                          <div style={{fontWeight:700,color:C.orange}}>₦{(r.discount_amount||0).toLocaleString()} off</div>
+                          <div style={{fontSize:11,color:C.grey}}>{r.status}</div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div style={{background:C.black,borderRadius:10,padding:20,color:C.white}}>
+                  <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>🔗 Keep Sharing Your Link</div>
+                  <div style={{fontSize:12,color:"#AAA",lineHeight:1.7,marginBottom:10}}>Every person who signs up through your link and pays their first deposit earns you a discount — and becomes your guarantor. No limits.</div>
+                  <div style={{background:"#1A1A1A",borderRadius:6,padding:"10px 14px",fontSize:12,color:C.orange,fontFamily:"monospace",wordBreak:"break-all"}}>
+                    tbvap.vercel.app/#/ride?ref={riderPortal.referral_code}
+                  </div>
+                  <button onClick={()=>{navigator.clipboard.writeText("tbvap.vercel.app/#/ride?ref="+riderPortal.referral_code);showToast("Link copied!");}}
+                    style={{marginTop:12,background:C.orange,color:C.white,border:"none",padding:"10px 20px",borderRadius:6,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -421,16 +733,34 @@ export default function App(){
                       <div><span style={{color:C.grey}}>Guarantor 1: </span><strong>{r.guarantor_1||"—"}</strong></div>
                       <div><span style={{color:C.grey}}>Guarantor 2: </span><strong>{r.guarantor_2||"—"}</strong></div>
                       <div><span style={{color:C.grey}}>Guarantor 3: </span><strong>{r.guarantor_3||"—"}</strong></div>
+                      <div><span style={{color:C.grey}}>App Status: </span><strong style={{textTransform:"uppercase"}}>{r.app_status||"under_review"}</strong></div>
+                      <div><span style={{color:C.grey}}>Rider Status: </span><strong style={{textTransform:"uppercase"}}>{r.rider_status||"not_committed"}</strong></div>
+                      <div><span style={{color:C.grey}}>Referral Code: </span><strong>{r.referral_code||"—"}</strong></div>
+                      <div><span style={{color:C.grey}}>HP Discount: </span><strong>₦{(r.hp_discount_balance||0).toLocaleString()}</strong></div>
                       <div><span style={{color:C.grey}}>Applied: </span><strong>{new Date(r.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})}</strong></div>
                     </div>
                     {r.photo_id&&<div style={{marginBottom:12}}><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Photo ID:</div><img src={r.photo_id} alt="ID" style={{maxWidth:200,maxHeight:120,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
-                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                      {["pending","approved","active","rejected","completed"].map(s=>(
-                        <button key={s} onClick={()=>updateStatus("rt_riders",r.id,s)}
+                    <div style={{marginBottom:8,fontSize:11,color:C.grey,fontWeight:700}}>Application Status:</div>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
+                      {["under_review","valid","rejected"].map(s=>(
+                        <button key={s} onClick={()=>sb.from("rt_riders").update({app_status:s}).eq("id",r.id).then(loadData)}
                           style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid "+C.lightgr,
-                          background:r.status===s?C.orange:C.white,color:r.status===s?C.white:C.grey,
+                          background:(r.app_status||"under_review")===s?C.orange:C.white,
+                          color:(r.app_status||"under_review")===s?C.white:C.grey,
                           fontSize:11,fontWeight:700,cursor:"pointer",textTransform:"capitalize"}}>
-                          {s}
+                          {s.replace("_"," ")}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{marginBottom:8,fontSize:11,color:C.grey,fontWeight:700}}>Rider Status:</div>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      {["not_committed","committed_applicant","active_rider"].map(s=>(
+                        <button key={s} onClick={()=>sb.from("rt_riders").update({rider_status:s}).eq("id",r.id).then(loadData)}
+                          style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid "+C.lightgr,
+                          background:(r.rider_status||"not_committed")===s?C.blue:C.white,
+                          color:(r.rider_status||"not_committed")===s?C.white:C.grey,
+                          fontSize:11,fontWeight:700,cursor:"pointer",textTransform:"capitalize"}}>
+                          {s.replace(/_/g," ")}
                         </button>
                       ))}
                     </div>
