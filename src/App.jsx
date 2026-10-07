@@ -501,8 +501,8 @@ export default function App(){
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>78 weeks</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total HP payments</span><strong>₦2,184,000</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.orange}}>₦2,384,000</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Bike Referral Discount</span><strong style={{color:C.green}}>₦100,000 / Bike Rider</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Keke Referral Discount</span><strong style={{color:C.green}}>₦200,000 / Keke Rider</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦100,000 / Referral of new Bike Applicant</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦200,000 / Referral of new Keke Applicant</strong></div>
                   </>):(<>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Current Market Value</span><strong>₦4,500,000</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Insurance & Plate License Reg</span><strong>Inclusive</strong></div>
@@ -512,8 +512,8 @@ export default function App(){
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>104 weeks</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total HP payments</span><strong>₦6,240,000</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.green}}>₦6,740,000</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Bike Referral Discount</span><strong style={{color:C.green}}>₦100,000 / Bike Rider</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Keke Referral Discount</span><strong style={{color:C.green}}>₦200,000 / Keke Rider</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦100,000 / Referral of new Bike Applicant</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦200,000 / Referral of new Keke Applicant</strong></div>
                   </>)}
                   {riderPortal.hp_discount_balance>0&&(
                     <div style={{marginTop:12,background:"rgba(232,98,10,.2)",borderRadius:6,padding:"10px 12px",fontSize:12,color:C.orange}}>
@@ -1021,8 +1021,8 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">78 weeks</span></div>
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦2,184,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val hi">₦2,384,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Bike Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 / Bike Rider</span></div>
-                    <div className="v-row"><span className="v-lbl">Keke Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 / Keke Rider</span></div>
+                    <div className="v-row"><span className="v-lbl">Discount on Hire Purchase Balance</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 / Referral of new Bike Applicant</span></div>
+                    <div className="v-row"><span className="v-lbl">Discount on Hire Purchase Balance</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 / Referral of new Keke Applicant</span></div>
                     <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#166534",lineHeight:1.7}}>
                       🎯 <strong>Referral Discount:</strong> Refer a bike buyer — get ₦100,000 off your balance. Refer a keke buyer — get ₦200,000 off. No limits.
                     </div>
@@ -1047,8 +1047,8 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">104 weeks</span></div>
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦6,240,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:C.green,fontSize:16}}>₦6,740,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Bike Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 / Bike Rider</span></div>
-                    <div className="v-row"><span className="v-lbl">Keke Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 / Keke Rider</span></div>
+                    <div className="v-row"><span className="v-lbl">Discount on Hire Purchase Balance</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 / Referral of new Bike Applicant</span></div>
+                    <div className="v-row"><span className="v-lbl">Discount on Hire Purchase Balance</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 / Referral of new Keke Applicant</span></div>
                     <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#166534",lineHeight:1.7}}>
                       🎯 <strong>Referral Discount:</strong> Refer a bike buyer — get ₦100,000 off your balance. Refer a keke buyer — get ₦200,000 off. No limits.
                     </div>
