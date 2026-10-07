@@ -206,10 +206,14 @@ function Footer(){
 // ── Main App ─────────────────────────────────────────────────
 export default function App(){
   // Detect page from URL path
-  const path = window.location.pathname.replace(/\//g,"").toLowerCase();
-  // page: "ride"|"agent"|"invest"|"" (default=access)
-  const page = ["ride","agent","invest"].includes(path) ? path : "access";
-
+  const getPage = () => {
+    const h = window.location.hash.replace(/^#\/?/,"").toLowerCase();
+    const p = window.location.pathname.replace(/\//g,"").toLowerCase();
+    return ["ride","agent","invest"].includes(h) ? h : ["ride","agent","invest"].includes(p) ? p : "access";
+  };
+  const [page, setPage] = useState(getPage());
+  // Listen for hash changes (back/forward button)
+  useState(()=>{ const fn=()=>setPage(getPage()); window.addEventListener("hashchange",fn); return ()=>window.removeEventListener("hashchange",fn); });
   const [modal, setModal] = useState(null);
   const [form,  setForm]  = useState({});
   const [toast, setToast] = useState(null);
@@ -226,7 +230,7 @@ export default function App(){
     setModal(null); setForm({});
   };
 
-  const navigate = p => { window.location.pathname = "/"+p; };
+  const navigate = p => { window.location.href = "/#/"+p; };
 
   return(
     <>
