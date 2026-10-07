@@ -372,15 +372,15 @@ export default function App(){
           <div style={{background:C.offwhite}}>
             <div className="wrap">
               <div className="sec-lbl" style={{color:C.orange}}>Referral Discount</div>
-              <h2 className="sec-h2">Refer Someone. Reduce Your Balance.</h2>
+              <h2 className="sec-h2">Refer Someone. Get a Discount on Your HP Balance.</h2>
               <div className="divider" style={{background:C.orange}}/>
               <div className="ref-box">
-                <p style={{color:"#AAA",fontSize:14,lineHeight:1.8,marginBottom:16}}>Every person you refer who takes delivery earns you a discount off your HP balance. No limits.</p>
+                <p style={{color:"#AAA",fontSize:14,lineHeight:1.8,marginBottom:16}}>For every person you successfully refer to RideTrust, you receive a discount off your own outstanding HP balance. The more you refer, the less you owe.</p>
                 <div className="ref-grid">
-                  <div className="ref-item"><div className="ref-item-t">🏍️ You refer a Bike rider</div><div className="ref-item-b">₦100,000 knocked off your balance on their delivery.</div></div>
-                  <div className="ref-item"><div className="ref-item-t">🛺 You refer a Keke rider</div><div className="ref-item-b">₦200,000 knocked off your balance on their delivery.</div></div>
-                  <div className="ref-item"><div className="ref-item-t">🔄 No limit</div><div className="ref-item-b">Keep referring. Every successful one reduces your balance.</div></div>
-                  <div className="ref-item"><div className="ref-item-t">✅ When it applies</div><div className="ref-item-b">Discount credited only after referred person fulfils all requirements and takes delivery. Referred person may also serve as one of your 3 guarantors.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Bike applicant</div><div className="ref-item-b">Get ₦100,000 taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🛺 Refer a Keke applicant</div><div className="ref-item-b">Get ₦200,000 taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🔄 No limit</div><div className="ref-item-b">No limit on referrals. Each successful one reduces what you still owe on your own vehicle.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">✅ When it applies</div><div className="ref-item-b">Discount applies as soon as the person you referred pays their first deposit and becomes a committed subscriber. If they withdraw, the discount is reversed. They may also count as one of your 3 guarantors. Terms & Conditions apply.</div></div>
                 </div>
               </div>
             </div>
