@@ -260,7 +260,7 @@ export default function App(){
               </button>
               <button className="int-btn" onClick={()=>navigate("agent")}>
                 <span className="int-icon">🏢</span>
-                <div><div className="int-label">Sign Up as Local Managing Agent</div><div className="int-sub">Manage riders. Earn weekly commissions.</div></div>
+                <div><div className="int-label">Sign Up to Become a Local Managing Agent</div><div className="int-sub">Manage riders. Earn weekly commissions.</div></div>
               </button>
               <button className="int-btn" onClick={()=>navigate("invest")}>
                 <span className="int-icon">💰</span>
