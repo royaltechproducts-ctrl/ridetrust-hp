@@ -258,6 +258,7 @@ export default function App(){
   const [guarantors,  setGuarantors]  = useState([]);
   const [referrals,   setReferrals]   = useState([]);
   const [gForm,       setGForm]       = useState({name:"",email:"",phone:""});
+  const [confirmDialog, setConfirmDialog] = useState(null); // {msg, onConfirm}
 
   const setF = (k,v) => setForm(f=>({...f,[k]:v}));
   const showToast = msg => { setToast(msg); setTimeout(()=>setToast(null),3500); };
@@ -323,6 +324,8 @@ export default function App(){
     loadData();
     showToast("Status updated.");
   };
+
+  const confirmUpdate = (msg, fn) => setConfirmDialog({msg, onConfirm: fn});
 
   const submit = async type => {
     if(!form.name?.trim()||!form.phone?.trim()||!form.email?.trim()){
@@ -743,7 +746,7 @@ export default function App(){
                     <div style={{marginBottom:8,fontSize:11,color:C.grey,fontWeight:700}}>Application Status:</div>
                     <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
                       {["under_review","valid","rejected"].map(s=>(
-                        <button key={s} onClick={()=>sb.from("rt_riders").update({app_status:s}).eq("id",r.id).then(loadData)}
+                        <button key={s} onClick={()=>confirmUpdate(`Set Application Status to "${s.replace('_',' ')}" for ${r.full_name}?`, ()=>sb.from('rt_riders').update({app_status:s}).eq('id',r.id).then(loadData))}
                           style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid "+C.lightgr,
                           background:(r.app_status||"under_review")===s?C.orange:C.white,
                           color:(r.app_status||"under_review")===s?C.white:C.grey,
@@ -755,7 +758,7 @@ export default function App(){
                     <div style={{marginBottom:8,fontSize:11,color:C.grey,fontWeight:700}}>Rider Status:</div>
                     <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                       {["not_committed","committed_applicant","active_rider"].map(s=>(
-                        <button key={s} onClick={()=>sb.from("rt_riders").update({rider_status:s}).eq("id",r.id).then(loadData)}
+                        <button key={s} onClick={()=>confirmUpdate(`Set Rider Status to "${s.replace(/_/g,' ')}" for ${r.full_name}?`, ()=>sb.from('rt_riders').update({rider_status:s}).eq('id',r.id).then(loadData))}
                           style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid "+C.lightgr,
                           background:(r.rider_status||"not_committed")===s?C.blue:C.white,
                           color:(r.rider_status||"not_committed")===s?C.white:C.grey,
@@ -800,7 +803,7 @@ export default function App(){
                     </div>
                     <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                       {["pending","approved","rejected"].map(s=>(
-                        <button key={s} onClick={()=>updateStatus("rt_agents",a.id,s)}
+                        <button key={s} onClick={()=>confirmUpdate(`Set status to "${s}" for ${a.full_name}?`, ()=>updateStatus('rt_agents',a.id,s))}
                           style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid "+C.lightgr,
                           background:a.status===s?C.blue:C.white,color:a.status===s?C.white:C.grey,
                           fontSize:11,fontWeight:700,cursor:"pointer",textTransform:"capitalize"}}>
@@ -848,7 +851,7 @@ export default function App(){
                     {inv.photo_id&&<div style={{marginBottom:12}}><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Photo ID:</div><img src={inv.photo_id} alt="ID" style={{maxWidth:200,maxHeight:120,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
                     <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                       {["pending","approved","active","rejected"].map(s=>(
-                        <button key={s} onClick={()=>updateStatus("rt_investors",inv.id,s)}
+                        <button key={s} onClick={()=>confirmUpdate(`Set status to "${s}" for ${inv.full_name}?`, ()=>updateStatus('rt_investors',inv.id,s))}
                           style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid "+C.lightgr,
                           background:inv.status===s?C.green:C.white,color:inv.status===s?C.white:C.grey,
                           fontSize:11,fontWeight:700,cursor:"pointer",textTransform:"capitalize"}}>
@@ -1491,6 +1494,26 @@ export default function App(){
                 <button className="submit-btn" style={{background:C.green}} onClick={()=>submit("invest-keke")}>Submit Investment Enquiry</button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Confirm dialog */}
+      {confirmDialog&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div style={{background:C.white,borderRadius:10,padding:28,maxWidth:380,width:"100%",textAlign:"center"}}>
+            <div style={{fontSize:24,marginBottom:12}}>⚠️</div>
+            <div style={{fontWeight:700,fontSize:15,color:C.black,marginBottom:20,lineHeight:1.6}}>{confirmDialog.msg}</div>
+            <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+              <button onClick={()=>setConfirmDialog(null)}
+                style={{padding:"10px 24px",borderRadius:6,border:"1.5px solid "+C.lightgr,background:C.white,color:C.grey,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                Cancel
+              </button>
+              <button onClick={()=>{confirmDialog.onConfirm();setConfirmDialog(null);}}
+                style={{padding:"10px 24px",borderRadius:6,border:"none",background:C.orange,color:C.white,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                Yes, Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}
