@@ -1,4 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const SB_URL = "https://zlaetfkeeuxvvxrdtbqq.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpsYWV0ZmtlZXV4dnZ4cmR0YnFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzOTEwMDIsImV4cCI6MjEwNjk2NzAwMn0.RsqkPXCnAl7M3mww8x3Sk4DIfYYOsv6TBv-3LqoOX40";
+const sb = createClient(SB_URL, SB_KEY);
+const ADMIN_PASS = "RideTrust@RoyalTech2026";
 
 // ── Design tokens ─────────────────────────────────────────────
 const C = {
@@ -214,23 +220,97 @@ export default function App(){
   const [page, setPage] = useState(getPage());
   // Listen for hash changes (back/forward button)
   useState(()=>{ const fn=()=>setPage(getPage()); window.addEventListener("hashchange",fn); return ()=>window.removeEventListener("hashchange",fn); });
-  const [modal, setModal] = useState(null);
-  const [form,  setForm]  = useState({});
-  const [toast, setToast] = useState(null);
+  const [modal,     setModal]     = useState(null);
+  const [form,      setForm]      = useState({});
+  const [toast,     setToast]     = useState(null);
   const [loginForm, setLoginForm] = useState({email:"",password:""});
+  const [adminOn,   setAdminOn]   = useState(false);
+  const [adminTab,  setAdminTab]  = useState("riders");
+  const [riders,    setRiders]    = useState([]);
+  const [agents,    setAgents]    = useState([]);
+  const [investors, setInvestors] = useState([]);
+  const [loading,   setLoading]   = useState(false);
+  const [ga4,       setGa4]       = useState(null);
+  const [ga4Err,    setGa4Err]    = useState(null);
 
   const setF = (k,v) => setForm(f=>({...f,[k]:v}));
   const showToast = msg => { setToast(msg); setTimeout(()=>setToast(null),3500); };
+  const navigate  = p => { window.location.href = "/#/"+p; };
 
-  const submit = type => {
+  const loadData = async () => {
+    setLoading(true);
+    const [r,a,i] = await Promise.all([
+      sb.from("rt_riders").select("*").order("created_at",{ascending:false}),
+      sb.from("rt_agents").select("*").order("created_at",{ascending:false}),
+      sb.from("rt_investors").select("*").order("created_at",{ascending:false}),
+    ]);
+    if(r.data) setRiders(r.data);
+    if(a.data) setAgents(a.data);
+    if(i.data) setInvestors(i.data);
+    setLoading(false);
+  };
+
+  useEffect(()=>{ if(adminOn) loadData(); },[adminOn]);
+
+  useEffect(()=>{
+    if(adminOn && adminTab==="analytics" && !ga4){
+      fetch("/api/analytics")
+        .then(r=>r.json())
+        .then(d=>{ if(d.error) setGa4Err(d.error); else setGa4(d); })
+        .catch(e=>setGa4Err(e.message));
+    }
+  },[adminOn, adminTab]);
+
+  const updateStatus = async (table, id, status) => {
+    await sb.from(table).update({status}).eq("id",id);
+    loadData();
+    showToast("Status updated.");
+  };
+
+  const submit = async type => {
     if(!form.name?.trim()||!form.phone?.trim()||!form.email?.trim()){
       showToast("Please fill in all required fields."); return;
     }
-    showToast("Application submitted! RoyalTech will contact you within 24 hours.");
-    setModal(null); setForm({});
+    try {
+      if(type==="rider-bike"||type==="rider-keke"){
+        await sb.from("rt_riders").insert({
+          vehicle_type: type==="rider-bike"?"bike":"keke",
+          full_name: form.name, phone: form.phone, email: form.email,
+          address: form.address||null, experience: form.experience||null,
+          referrer: form.referrer||null,
+          guarantor_1: form.g1||null, guarantor_2: form.g2||null, guarantor_3: form.g3||null,
+          photo_id: form.photoId||null,
+        });
+      } else if(type==="lma"){
+        await sb.from("rt_agents").insert({
+          full_name: form.name, phone: form.phone, email: form.email,
+          address: form.address||null,
+          utility_bill: form.utilityBill||null,
+          parking_photo: form.parkingPhoto||null,
+          photo_id: form.photoId||null,
+          tech_skills: form.techSkills?Number(form.techSkills):null,
+          biz_experience: form.bizExp?Number(form.bizExp):null,
+        });
+      } else if(type==="invest-bike"||type==="invest-keke"){
+        await sb.from("rt_investors").insert({
+          package_type: type==="invest-bike"?"bike":"keke",
+          full_name: form.name, phone: form.phone, email: form.email,
+          units: form.units?Number(form.units.split(" ")[0]):1,
+          photo_id: form.photoId||null,
+          notes: form.notes||null,
+        });
+      }
+      showToast("Application submitted! RoyalTech will contact you within 24 hours.");
+      setModal(null); setForm({});
+    } catch(e) {
+      showToast("Submission failed. Please try again."); 
+    }
   };
 
-  const navigate = p => { window.location.href = "/#/"+p; };
+  const handleLogin = () => {
+    if(loginForm.password === ADMIN_PASS){ setAdminOn(true); }
+    else { showToast("Incorrect password."); }
+  };
 
   return(
     <>
@@ -249,8 +329,8 @@ export default function App(){
             <div className="access-title cd">Welcome Back</div>
             <div className="access-sub">Enter your credentials to access your portal.</div>
             <div className="field"><label>Email Address</label><input type="email" placeholder="your@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))}/></div>
-            <div className="field"><label>Password</label><input type="password" placeholder="Your password" value={loginForm.password} onChange={e=>setLoginForm(f=>({...f,password:e.target.value}))}/></div>
-            <button className="btn btn-orange btn-full" style={{marginTop:4}} onClick={()=>showToast("Portal login coming soon.")}>Access My Portal</button>
+            <div className="field"><label>Password</label><input type="password" placeholder="Your password" value={loginForm.password} onChange={e=>setLoginForm(f=>({...f,password:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/></div>
+            <button className="btn btn-orange btn-full" style={{marginTop:4}} onClick={handleLogin}>Access My Portal</button>
             <div style={{textAlign:"center",marginTop:12}}>
               <button onClick={()=>showToast("Password reset — contact RoyalTech on WhatsApp: +234 909 999 4816")} style={{background:"none",border:"none",color:C.grey,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot your password?</button>
             </div>
@@ -271,6 +351,282 @@ export default function App(){
                 <div><div className="int-label">Sign Up for Investment Without Stress</div><div className="int-sub">Put in capital. Receive returns. Zero operations.</div></div>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ ADMIN PORTAL ══════════════════════════════════════ */}
+      {page==="access"&&adminOn&&(
+        <div style={{position:"fixed",inset:0,background:C.offwhite,zIndex:500,overflowY:"auto"}}>
+          {/* Admin nav */}
+          <div style={{background:C.black,padding:"0 24px",display:"flex",justifyContent:"space-between",alignItems:"center",height:56,position:"sticky",top:0,zIndex:10}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:C.white}}>
+              RIDE<span style={{color:C.orange}}>TRUST</span> <span style={{color:"#888",fontSize:13,fontWeight:400}}>ADMIN</span>
+            </div>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <button onClick={loadData} style={{background:"#222",color:"#AAA",border:"none",padding:"6px 12px",borderRadius:4,fontSize:12,cursor:"pointer"}}>↻ Refresh</button>
+              <button onClick={()=>setAdminOn(false)} style={{background:C.orange,color:C.white,border:"none",padding:"6px 14px",borderRadius:4,fontSize:12,cursor:"pointer",fontWeight:700}}>Exit Admin</button>
+            </div>
+          </div>
+
+          {/* Tab bar */}
+          <div style={{background:C.white,borderBottom:"2px solid "+C.lightgr,padding:"0 24px",display:"flex",gap:4,overflowX:"auto"}}>
+            {[
+              {k:"riders",   label:"🏍️ Riders ("+riders.length+")"},
+              {k:"agents",   label:"🏢 Agents ("+agents.length+")"},
+              {k:"investors",label:"💰 Investors ("+investors.length+")"},
+              {k:"analytics",label:"📊 Analytics"},
+            ].map(t=>(
+              <button key={t.k} onClick={()=>setAdminTab(t.k)}
+                style={{padding:"14px 16px",background:"none",border:"none",
+                borderBottom:adminTab===t.k?"3px solid "+C.orange:"3px solid transparent",
+                fontWeight:adminTab===t.k?700:400,color:adminTab===t.k?C.black:C.grey,
+                fontSize:13,cursor:"pointer",whiteSpace:"nowrap"}}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{maxWidth:1100,margin:"0 auto",padding:"24px 24px"}}>
+            {loading&&<div style={{textAlign:"center",padding:40,color:C.grey}}>Loading...</div>}
+
+            {/* ── Riders tab ── */}
+            {adminTab==="riders"&&!loading&&(
+              <div>
+                <div style={{fontWeight:800,fontSize:15,color:C.black,marginBottom:16}}>Rider Applications — {riders.length} total</div>
+                {riders.length===0&&<div style={{color:C.grey,fontSize:14}}>No applications yet.</div>}
+                {riders.map(r=>(
+                  <div key={r.id} style={{background:C.white,borderRadius:10,padding:20,marginBottom:14,border:"1.5px solid "+C.lightgr}}>
+                    <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:12}}>
+                      <div>
+                        <div style={{fontWeight:800,fontSize:15,color:C.black}}>{r.full_name}</div>
+                        <div style={{fontSize:12,color:C.grey,marginTop:2}}>{r.email} · {r.phone}</div>
+                        <div style={{fontSize:12,color:C.grey}}>{r.address||"—"}</div>
+                      </div>
+                      <div style={{display:"flex",gap:8,alignItems:"flex-start",flexWrap:"wrap"}}>
+                        <span style={{padding:"4px 10px",borderRadius:20,fontSize:11,fontWeight:700,
+                          background:r.vehicle_type==="bike"?"#1A1A1A":"#0D2B0D",color:C.white}}>
+                          {r.vehicle_type==="bike"?"🏍️ Bike":"🛺 Keke"}
+                        </span>
+                        <span style={{padding:"4px 10px",borderRadius:20,fontSize:11,fontWeight:700,
+                          background:r.status==="approved"?"#BBF7D0":r.status==="active"?"#BFDBFE":r.status==="rejected"?"#FEE2E2":"#FEF3C7",
+                          color:r.status==="approved"?"#166534":r.status==="active"?"#1E40AF":r.status==="rejected"?"#991B1B":"#92400E"}}>
+                          {r.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10,marginBottom:12,fontSize:12}}>
+                      <div><span style={{color:C.grey}}>Experience: </span><strong>{r.experience||"—"}</strong></div>
+                      <div><span style={{color:C.grey}}>Referrer: </span><strong>{r.referrer||"None"}</strong></div>
+                      <div><span style={{color:C.grey}}>Guarantor 1: </span><strong>{r.guarantor_1||"—"}</strong></div>
+                      <div><span style={{color:C.grey}}>Guarantor 2: </span><strong>{r.guarantor_2||"—"}</strong></div>
+                      <div><span style={{color:C.grey}}>Guarantor 3: </span><strong>{r.guarantor_3||"—"}</strong></div>
+                      <div><span style={{color:C.grey}}>Applied: </span><strong>{new Date(r.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})}</strong></div>
+                    </div>
+                    {r.photo_id&&<div style={{marginBottom:12}}><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Photo ID:</div><img src={r.photo_id} alt="ID" style={{maxWidth:200,maxHeight:120,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      {["pending","approved","active","rejected","completed"].map(s=>(
+                        <button key={s} onClick={()=>updateStatus("rt_riders",r.id,s)}
+                          style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid "+C.lightgr,
+                          background:r.status===s?C.orange:C.white,color:r.status===s?C.white:C.grey,
+                          fontSize:11,fontWeight:700,cursor:"pointer",textTransform:"capitalize"}}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Agents tab ── */}
+            {adminTab==="agents"&&!loading&&(
+              <div>
+                <div style={{fontWeight:800,fontSize:15,color:C.black,marginBottom:16}}>Agent Applications — {agents.length} total</div>
+                {agents.length===0&&<div style={{color:C.grey,fontSize:14}}>No applications yet.</div>}
+                {agents.map(a=>(
+                  <div key={a.id} style={{background:C.white,borderRadius:10,padding:20,marginBottom:14,border:"1.5px solid "+C.lightgr}}>
+                    <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:12}}>
+                      <div>
+                        <div style={{fontWeight:800,fontSize:15,color:C.black}}>{a.full_name}</div>
+                        <div style={{fontSize:12,color:C.grey,marginTop:2}}>{a.email} · {a.phone}</div>
+                        <div style={{fontSize:12,color:C.grey}}>{a.address||"—"}</div>
+                      </div>
+                      <span style={{padding:"4px 10px",borderRadius:20,fontSize:11,fontWeight:700,
+                        background:a.status==="approved"?"#BBF7D0":a.status==="rejected"?"#FEE2E2":"#FEF3C7",
+                        color:a.status==="approved"?"#166534":a.status==="rejected"?"#991B1B":"#92400E"}}>
+                        {a.status}
+                      </span>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10,marginBottom:12,fontSize:12}}>
+                      <div><span style={{color:C.grey}}>Tech skills: </span><strong>{a.tech_skills||"—"}/5</strong></div>
+                      <div><span style={{color:C.grey}}>Transport exp: </span><strong>{a.biz_experience||"—"}/5</strong></div>
+                      <div><span style={{color:C.grey}}>Applied: </span><strong>{new Date(a.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})}</strong></div>
+                    </div>
+                    <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:12}}>
+                      {a.utility_bill&&<div><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Utility Bill:</div><img src={a.utility_bill} alt="Utility" style={{maxWidth:160,maxHeight:100,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
+                      {a.parking_photo&&<div><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Parking Yard:</div><img src={a.parking_photo} alt="Parking" style={{maxWidth:160,maxHeight:100,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
+                      {a.photo_id&&<div><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Photo ID:</div><img src={a.photo_id} alt="ID" style={{maxWidth:160,maxHeight:100,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
+                    </div>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      {["pending","approved","rejected"].map(s=>(
+                        <button key={s} onClick={()=>updateStatus("rt_agents",a.id,s)}
+                          style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid "+C.lightgr,
+                          background:a.status===s?C.blue:C.white,color:a.status===s?C.white:C.grey,
+                          fontSize:11,fontWeight:700,cursor:"pointer",textTransform:"capitalize"}}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Investors tab ── */}
+            {adminTab==="investors"&&!loading&&(
+              <div>
+                <div style={{fontWeight:800,fontSize:15,color:C.black,marginBottom:16}}>Investor Enquiries — {investors.length} total</div>
+                {investors.length===0&&<div style={{color:C.grey,fontSize:14}}>No enquiries yet.</div>}
+                {investors.map(inv=>(
+                  <div key={inv.id} style={{background:C.white,borderRadius:10,padding:20,marginBottom:14,border:"1.5px solid "+C.lightgr}}>
+                    <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:12}}>
+                      <div>
+                        <div style={{fontWeight:800,fontSize:15,color:C.black}}>{inv.full_name}</div>
+                        <div style={{fontSize:12,color:C.grey,marginTop:2}}>{inv.email} · {inv.phone}</div>
+                      </div>
+                      <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                        <span style={{padding:"4px 10px",borderRadius:20,fontSize:11,fontWeight:700,
+                          background:inv.package_type==="bike"?"#EFF6FF":"#F0FFF4",
+                          color:inv.package_type==="bike"?C.blue:C.green}}>
+                          {inv.package_type==="bike"?"🏍️ Two Wheels":"🛺 Three Wheels"}
+                        </span>
+                        <span style={{padding:"4px 10px",borderRadius:20,fontSize:11,fontWeight:700,
+                          background:inv.status==="approved"?"#BBF7D0":inv.status==="rejected"?"#FEE2E2":"#FEF3C7",
+                          color:inv.status==="approved"?"#166534":inv.status==="rejected"?"#991B1B":"#92400E"}}>
+                          {inv.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10,marginBottom:12,fontSize:12}}>
+                      <div><span style={{color:C.grey}}>Units: </span><strong>{inv.units}</strong></div>
+                      <div><span style={{color:C.grey}}>Total investment: </span><strong>₦{(inv.units*(inv.package_type==="bike"?1500000:4500000)).toLocaleString()}</strong></div>
+                      <div><span style={{color:C.grey}}>Total return: </span><strong>₦{(inv.units*(inv.package_type==="bike"?1950000:5720000)).toLocaleString()}</strong></div>
+                      <div><span style={{color:C.grey}}>Applied: </span><strong>{new Date(inv.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})}</strong></div>
+                    </div>
+                    {inv.notes&&<div style={{fontSize:12,color:C.grey,marginBottom:12,background:C.offwhite,padding:"8px 12px",borderRadius:6}}>Notes: {inv.notes}</div>}
+                    {inv.photo_id&&<div style={{marginBottom:12}}><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Photo ID:</div><img src={inv.photo_id} alt="ID" style={{maxWidth:200,maxHeight:120,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      {["pending","approved","active","rejected"].map(s=>(
+                        <button key={s} onClick={()=>updateStatus("rt_investors",inv.id,s)}
+                          style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid "+C.lightgr,
+                          background:inv.status===s?C.green:C.white,color:inv.status===s?C.white:C.grey,
+                          fontSize:11,fontWeight:700,cursor:"pointer",textTransform:"capitalize"}}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Analytics tab ── */}
+            {adminTab==="analytics"&&(
+              <div>
+                <div style={{fontWeight:800,fontSize:15,color:C.black,marginBottom:16}}>Platform Overview</div>
+                {/* Summary stats */}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:24}}>
+                  {[
+                    {label:"Total Riders",value:riders.length,color:C.black},
+                    {label:"Bike Applications",value:riders.filter(r=>r.vehicle_type==="bike").length,color:C.black},
+                    {label:"Keke Applications",value:riders.filter(r=>r.vehicle_type==="keke").length,color:C.green},
+                    {label:"Active Riders",value:riders.filter(r=>r.status==="active").length,color:C.orange},
+                    {label:"Agent Applications",value:agents.length,color:C.blue},
+                    {label:"Approved Agents",value:agents.filter(a=>a.status==="approved").length,color:C.green},
+                    {label:"Investor Enquiries",value:investors.length,color:C.purple},
+                    {label:"Active Investors",value:investors.filter(i=>i.status==="active").length,color:C.green},
+                  ].map(s=>(
+                    <div key={s.label} style={{background:C.white,borderRadius:8,padding:16,border:"1.5px solid "+C.lightgr,textAlign:"center"}}>
+                      <div style={{fontWeight:900,fontSize:28,color:s.color}}>{s.value}</div>
+                      <div style={{fontSize:11,color:C.grey,marginTop:4,lineHeight:1.4}}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* GA4 panel */}
+                <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr}}>
+                  <div style={{fontWeight:800,fontSize:14,color:C.black,marginBottom:16}}>🌐 Website Visitor Analytics — Last 30 Days</div>
+                  {!ga4&&!ga4Err&&<div style={{color:C.grey,fontSize:13,textAlign:"center",padding:20}}>Loading visitor data...</div>}
+                  {ga4Err&&<div style={{background:"#FEF3C7",border:"1.5px solid #FCD34D",borderRadius:8,padding:12,fontSize:12,color:"#92400E",lineHeight:1.8}}><strong>Analytics unavailable:</strong> {ga4Err}</div>}
+                  {ga4&&(
+                    <div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10,marginBottom:16}}>
+                        {[
+                          {label:"Today",value:ga4.visitors?.today||0,icon:"👤"},
+                          {label:"This Week",value:ga4.visitors?.week||0,icon:"📅"},
+                          {label:"This Month",value:ga4.visitors?.month||0,icon:"📆"},
+                          {label:"Sessions (30d)",value:ga4.visitors?.sessions||0,icon:"🔄"},
+                        ].map(s=>(
+                          <div key={s.label} style={{background:C.offwhite,borderRadius:8,padding:12,textAlign:"center"}}>
+                            <div style={{fontSize:20,marginBottom:4}}>{s.icon}</div>
+                            <div style={{fontWeight:900,color:C.black,fontSize:20}}>{(s.value||0).toLocaleString()}</div>
+                            <div style={{fontSize:10,color:C.grey,marginTop:2}}>{s.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:12,marginBottom:8}}>📱 Devices</div>
+                          {(ga4.devices||[]).map(d=>{
+                            const total=(ga4.devices||[]).reduce((s,x)=>s+x.sessions,0)||1;
+                            const pct=Math.round((d.sessions/total)*100);
+                            return(
+                              <div key={d.device} style={{marginBottom:8}}>
+                                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:2}}>
+                                  <span style={{textTransform:"capitalize"}}>{d.device==="mobile"?"📱":d.device==="desktop"?"🖥️":"📟"} {d.device}</span>
+                                  <span style={{fontWeight:700}}>{pct}%</span>
+                                </div>
+                                <div style={{background:C.lightgr,borderRadius:4,height:5}}>
+                                  <div style={{background:C.blue,borderRadius:4,height:5,width:pct+"%"}}/>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:12,marginBottom:8}}>🔗 Traffic Sources</div>
+                          {(ga4.sources||[]).slice(0,5).map(s=>(
+                            <div key={s.source} style={{display:"flex",justifyContent:"space-between",padding:"5px 8px",background:C.offwhite,borderRadius:6,fontSize:11,marginBottom:4}}>
+                              <span>{s.source}</span><span style={{fontWeight:700}}>{s.sessions}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:12,marginBottom:8}}>📄 Top Pages</div>
+                          {(ga4.pages||[]).map(p=>(
+                            <div key={p.path} style={{display:"flex",justifyContent:"space-between",padding:"5px 8px",background:C.offwhite,borderRadius:6,fontSize:11,marginBottom:4}}>
+                              <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"65%"}}>{p.path}</span>
+                              <span style={{fontWeight:700}}>{p.views} views</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:12,marginBottom:8}}>🌍 Top Cities</div>
+                          {(ga4.cities||[]).map(c=>(
+                            <div key={c.city} style={{display:"flex",justifyContent:"space-between",padding:"5px 8px",background:C.offwhite,borderRadius:6,fontSize:11,marginBottom:4}}>
+                              <span>{c.city}</span><span style={{fontWeight:700}}>{c.users}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
