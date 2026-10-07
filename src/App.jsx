@@ -493,15 +493,27 @@ export default function App(){
                     {riderPortal.vehicle_type==="bike"?"🏍️ Dispatch Bike":"🛺 Keke Tricycle"} — Your HP Deal
                   </div>
                   {riderPortal.vehicle_type==="bike"?(<>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Current Market Value</span><strong>₦1,300,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Insurance & Plate License Reg</span><strong>₦200,000</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Initial deposit</span><strong style={{color:C.orange}}>₦200,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Deposit spread</span><strong>3 months</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Weekly remittance</span><strong>₦28,000 / week</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>78 weeks</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.orange}}>₦2,384,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total HP payments</span><strong>₦2,184,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.orange}}>₦2,384,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Bike Referral Discount</span><strong style={{color:C.green}}>₦100,000 / Bike Rider</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Keke Referral Discount</span><strong style={{color:C.green}}>₦200,000 / Keke Rider</strong></div>
                   </>):(<>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Current Market Value</span><strong>₦4,500,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Insurance & Plate License Reg</span><strong>Inclusive</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Initial deposit</span><strong style={{color:C.green}}>₦500,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Deposit spread</span><strong>3 months</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Weekly remittance</span><strong>₦60,000 / week</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>104 weeks</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.green}}>₦6,740,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total HP payments</span><strong>₦6,240,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.green}}>₦6,740,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Bike Referral Discount</span><strong style={{color:C.green}}>₦100,000 / Bike Rider</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Keke Referral Discount</span><strong style={{color:C.green}}>₦200,000 / Keke Rider</strong></div>
                   </>)}
                   {riderPortal.hp_discount_balance>0&&(
                     <div style={{marginTop:12,background:"rgba(232,98,10,.2)",borderRadius:6,padding:"10px 12px",fontSize:12,color:C.orange}}>
