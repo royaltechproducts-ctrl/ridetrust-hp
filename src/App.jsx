@@ -1013,12 +1013,16 @@ export default function App(){
                     <div className="v-desc">Brand new Bajaj, TVS or Qlink 200cc. Insurance and plate registration included.</div>
                   </div>
                   <div className="v-body">
+                    <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val">₦1,300,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">₦200,000</span></div>
                     <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val hi">₦200,000</span></div>
                     <div className="v-row"><span className="v-lbl">Deposit spread</span><span className="v-val">3 months</span></div>
                     <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦28,000 / week</span></div>
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">78 weeks</span></div>
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦2,184,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val hi">₦2,384,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Bike Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 / Bike Rider</span></div>
+                    <div className="v-row"><span className="v-lbl">Keke Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 / Keke Rider</span></div>
                     <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#166534",lineHeight:1.7}}>
                       🎯 <strong>Referral Discount:</strong> Refer a bike buyer — get ₦100,000 off your balance. Refer a keke buyer — get ₦200,000 off. No limits.
                     </div>
@@ -1035,12 +1039,16 @@ export default function App(){
                     <div className="v-desc">Brand new Bajaj RE, TVS King or Piaggio. Insurance and plate registration included.</div>
                   </div>
                   <div className="v-body">
+                    <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val">₦4,500,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">Inclusive</span></div>
                     <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val" style={{color:C.green,fontSize:16}}>₦500,000</span></div>
                     <div className="v-row"><span className="v-lbl">Deposit spread</span><span className="v-val">3 months</span></div>
                     <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦60,000 / week</span></div>
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">104 weeks</span></div>
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦6,240,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:C.green,fontSize:16}}>₦6,740,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Bike Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 / Bike Rider</span></div>
+                    <div className="v-row"><span className="v-lbl">Keke Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 / Keke Rider</span></div>
                     <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#166534",lineHeight:1.7}}>
                       🎯 <strong>Referral Discount:</strong> Refer a bike buyer — get ₦100,000 off your balance. Refer a keke buyer — get ₦200,000 off. No limits.
                     </div>
