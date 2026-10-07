@@ -164,8 +164,8 @@ const CONTACT = [
 const RIDER_STEPS = [
   {n:"01",t:"Apply Online",b:"Fill the short application form. Free. No fees."},
   {n:"02",t:"Get Approved",b:"RoyalTech reviews and sends you a commitment request."},
-  {n:"03",t:"3 Guarantors",b:"Bring 3 guarantors — each must also be a committed applicant."},
-  {n:"04",t:"Pay Deposit",b:"Bike: ₦200,000 · Keke: ₦500,000. Spread over 3 months."},
+  {n:"03",t:"3 Guarantors",b:"Bring 3 guarantors. Each guarantor must be either a committed applicant or an existing rider already on the RideTrust platform."},
+  {n:"04",t:"Pay Deposit",b:"Bike: ₦200,000 · Keke: ₦500,000. Spread over 3 months max. All 3 guarantors must be confirmed before deposit is accepted."},
   {n:"05",t:"Take Delivery",b:"Collect your brand new vehicle. Start earning immediately."},
   {n:"06",t:"Weekly Remittance",b:"Pay weekly to RoyalTech. Submit proof to your Managing Agent."},
   {n:"07",t:"Own It",b:"Complete all payments. Ownership transfers to you."},
@@ -380,7 +380,7 @@ export default function App(){
                   <div className="ref-item"><div className="ref-item-t">🏍️ You refer a Bike rider</div><div className="ref-item-b">₦100,000 knocked off your balance on their delivery.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🛺 You refer a Keke rider</div><div className="ref-item-b">₦200,000 knocked off your balance on their delivery.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🔄 No limit</div><div className="ref-item-b">Keep referring. Every successful one reduces your balance.</div></div>
-                  <div className="ref-item"><div className="ref-item-t">✅ When it applies</div><div className="ref-item-b">Discount credited only after referred person takes delivery.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">✅ When it applies</div><div className="ref-item-b">Discount credited only after referred person fulfils all requirements and takes delivery. Referred person may also serve as one of your 3 guarantors.</div></div>
                 </div>
               </div>
             </div>
@@ -643,6 +643,21 @@ export default function App(){
                 </div>
                 <div className="field"><label>Referred by someone? (Optional)</label><input placeholder="Referrer's name or phone" onChange={e=>setF("referrer",e.target.value)}/></div>
                 <div className="field">
+                  <label>Guarantor 1 — Name & Phone *</label>
+                  <input placeholder="Full name and phone number" onChange={e=>setF("g1",e.target.value)}/>
+                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
+                </div>
+                <div className="field">
+                  <label>Guarantor 2 — Name & Phone *</label>
+                  <input placeholder="Full name and phone number" onChange={e=>setF("g2",e.target.value)}/>
+                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
+                </div>
+                <div className="field">
+                  <label>Guarantor 3 — Name & Phone *</label>
+                  <input placeholder="Full name and phone number" onChange={e=>setF("g3",e.target.value)}/>
+                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
+                </div>
+                <div className="field">
                   <label>Valid Photo ID *</label>
                   <button className="snap-btn" style={{borderColor:"#93C5FD",color:C.blue,background:"#EFF6FF"}} onClick={()=>document.getElementById("snap-id-bike").click()}>
                     <span>📷</span><span>{form.photoId?"✅ ID captured — tap to retake":"Tap to snap your ID"}</span>
@@ -670,6 +685,21 @@ export default function App(){
                   </select>
                 </div>
                 <div className="field"><label>Referred by someone? (Optional)</label><input placeholder="Referrer's name or phone" onChange={e=>setF("referrer",e.target.value)}/></div>
+                <div className="field">
+                  <label>Guarantor 1 — Name & Phone *</label>
+                  <input placeholder="Full name and phone number" onChange={e=>setF("g1",e.target.value)}/>
+                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
+                </div>
+                <div className="field">
+                  <label>Guarantor 2 — Name & Phone *</label>
+                  <input placeholder="Full name and phone number" onChange={e=>setF("g2",e.target.value)}/>
+                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
+                </div>
+                <div className="field">
+                  <label>Guarantor 3 — Name & Phone *</label>
+                  <input placeholder="Full name and phone number" onChange={e=>setF("g3",e.target.value)}/>
+                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
+                </div>
                 <div className="field">
                   <label>Valid Photo ID *</label>
                   <button className="snap-btn" style={{borderColor:"#93C5FD",color:C.blue,background:"#EFF6FF"}} onClick={()=>document.getElementById("snap-id-keke").click()}>
