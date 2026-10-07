@@ -247,21 +247,24 @@ export default function App(){
             <div className="field"><label>Email Address</label><input type="email" placeholder="your@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))}/></div>
             <div className="field"><label>Password</label><input type="password" placeholder="Your password" value={loginForm.password} onChange={e=>setLoginForm(f=>({...f,password:e.target.value}))}/></div>
             <button className="btn btn-orange btn-full" style={{marginTop:4}} onClick={()=>showToast("Portal login coming soon.")}>Access My Portal</button>
+            <div style={{textAlign:"center",marginTop:12}}>
+              <button onClick={()=>showToast("Password reset — contact RoyalTech on WhatsApp: +234 909 999 4816")} style={{background:"none",border:"none",color:C.grey,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot your password?</button>
+            </div>
 
             <div className="divider-text">Not Registered Yet?</div>
             <div style={{fontSize:12,color:C.grey,marginBottom:12,textAlign:"center"}}>Click on your interest for more information and to sign up</div>
             <div className="interest-btns">
               <button className="int-btn" onClick={()=>navigate("ride")}>
-                <span className="int-icon">🏍️</span>
-                <div><div className="int-label">(1) Sign Up to Ride on Hire Purchase</div><div className="int-sub">Brand new bike or keke — own it fully</div></div>
+                <span className="int-icon">🛺</span>
+                <div><div className="int-label">Sign Up to Ride on Hire Purchase</div><div className="int-sub">Brand new bike or keke — own it fully</div></div>
               </button>
               <button className="int-btn" onClick={()=>navigate("agent")}>
                 <span className="int-icon">🏢</span>
-                <div><div className="int-label">(2) Sign Up as Local Managing Agent</div><div className="int-sub">Manage riders. Earn weekly commissions.</div></div>
+                <div><div className="int-label">Sign Up as Local Managing Agent</div><div className="int-sub">Manage riders. Earn weekly commissions.</div></div>
               </button>
               <button className="int-btn" onClick={()=>navigate("invest")}>
                 <span className="int-icon">💰</span>
-                <div><div className="int-label">(3) Sign Up for Investment Without Stress</div><div className="int-sub">Put in capital. Receive returns. Zero operations.</div></div>
+                <div><div className="int-label">Sign Up for Investment Without Stress</div><div className="int-sub">Put in capital. Receive returns. Zero operations.</div></div>
               </button>
             </div>
           </div>
