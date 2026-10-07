@@ -1,7 +1,5 @@
 {
   "rewrites": [
-    { "source": "/ride", "destination": "/" },
-    { "source": "/agent", "destination": "/" },
-    { "source": "/invest", "destination": "/" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
