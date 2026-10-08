@@ -249,6 +249,9 @@ export default function App(){
   const [riders,    setRiders]    = useState([]);
   const [agents,    setAgents]    = useState([]);
   const [investors, setInvestors] = useState([]);
+  const [buckets,   setBuckets]   = useState({});
+  const [remittances, setRemittances] = useState([]);
+  const [remitForm, setRemitForm] = useState({rider_id:"",amount:"",week_number:"",has_lma:true,notes:""});
   const [loading,   setLoading]   = useState(false);
   const [ga4,       setGa4]       = useState(null);
   const [ga4Err,    setGa4Err]    = useState(null);
@@ -297,15 +300,80 @@ export default function App(){
 
   const loadData = async () => {
     setLoading(true);
-    const [r,a,i] = await Promise.all([
+    const [r,a,i,b,rem] = await Promise.all([
       sb.from("rt_riders").select("*").order("created_at",{ascending:false}),
       sb.from("rt_agents").select("*").order("created_at",{ascending:false}),
       sb.from("rt_investors").select("*").order("created_at",{ascending:false}),
+      sb.from("rt_buckets").select("*"),
+      sb.from("rt_remittances").select("*,rt_riders(full_name,vehicle_type)").order("created_at",{ascending:false}).limit(50),
     ]);
     if(r.data) setRiders(r.data);
     if(a.data) setAgents(a.data);
     if(i.data) setInvestors(i.data);
+    if(b.data){ const bMap={}; b.data.forEach(x=>bMap[x.bucket_name]=x); setBuckets(bMap); }
+    if(rem.data) setRemittances(rem.data);
     setLoading(false);
+  };
+
+  // Record a remittance and split into buckets
+  const recordRemittance = async () => {
+    const rider = riders.find(r=>r.id===remitForm.rider_id);
+    if(!rider||!remitForm.amount){ showToast("Select rider and enter amount."); return; }
+    const amt = Number(remitForm.amount);
+    const vt  = rider.vehicle_type;
+    const hasLma = remitForm.has_lma;
+    // Split calculation
+    let inv=0, agent=0, rt=0, reserve=0;
+    if(vt==="bike"){
+      inv=24000; reserve=1000;
+      agent = hasLma ? 2000 : 0;
+      rt    = hasLma ? 1000 : 3000;
+    } else {
+      inv=55000; reserve=3000;
+      agent = hasLma ? 4000 : 0;
+      rt    = hasLma ? 3000 : 7000;
+    }
+    const expected = inv+agent+rt+reserve;
+    // Scale if underpaid
+    const scale = amt < expected ? amt/expected : 1;
+    const invAmt     = Math.floor(inv*scale);
+    const agentAmt   = Math.floor(agent*scale);
+    const rtAmt      = Math.floor(rt*scale);
+    const reserveAmt = amt - invAmt - agentAmt - rtAmt;
+    // Insert remittance record
+    await sb.from("rt_remittances").insert({
+      rider_id: remitForm.rider_id,
+      vehicle_type: vt,
+      week_number: Number(remitForm.week_number)||null,
+      amount_received: amt,
+      investor_share: invAmt,
+      agent_share: agentAmt,
+      royaltech_share: rtAmt,
+      reserve_share: reserveAmt,
+      has_lma: hasLma,
+      status: amt >= expected ? "full" : "short",
+      notes: remitForm.notes||null,
+    });
+    // Update bucket balances
+    const bUpdates = [
+      {name:"investor_"+vt,   add:invAmt},
+      {name:"agent_"+vt,      add:agentAmt},
+      {name:"royaltech_"+vt,  add:rtAmt},
+      {name:"reserve_"+vt,    add:reserveAmt},
+    ];
+    for(const b of bUpdates){
+      const cur = buckets[b.name];
+      if(cur){
+        await sb.from("rt_buckets").update({
+          balance: (cur.balance||0)+b.add,
+          total_received: (cur.total_received||0)+b.add,
+          updated_at: new Date().toISOString(),
+        }).eq("bucket_name",b.name);
+      }
+    }
+    setRemitForm({rider_id:"",amount:"",week_number:"",has_lma:true,notes:""});
+    await loadData();
+    showToast(amt>=expected?"Remittance recorded. All buckets updated.":"⚠️ Short remittance recorded. Buckets scaled proportionally.");
   };
 
   useEffect(()=>{ if(adminOn) loadData(); },[adminOn]);
@@ -703,6 +771,8 @@ export default function App(){
               {k:"agents",   label:"🏢 Agents ("+agents.length+")"},
               {k:"investors",label:"💰 Investors ("+investors.length+")"},
               {k:"analytics",label:"📊 Analytics"},
+            {k:"remittances",label:"💵 Remittances"},
+            {k:"buckets",label:"🪣 Fund Buckets"},
             ].map(t=>(
               <button key={t.k} onClick={()=>setAdminTab(t.k)}
                 style={{padding:"14px 16px",background:"none",border:"none",
@@ -876,6 +946,136 @@ export default function App(){
               </div>
             )}
 
+            {/* ── Remittances tab ── */}
+            {adminTab==="remittances"&&!loading&&(
+              <div>
+                {/* Record new remittance */}
+                <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:20}}>
+                  <div style={{fontWeight:800,fontSize:15,marginBottom:16}}>💵 Record Weekly Remittance</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+                    <div className="field">
+                      <label>Select Rider *</label>
+                      <select value={remitForm.rider_id} onChange={e=>setRemitForm(f=>({...f,rider_id:e.target.value}))}>
+                        <option value="">— Select rider —</option>
+                        {riders.filter(r=>r.rider_status==="committed_applicant"||r.rider_status==="active_rider").map(r=>(
+                          <option key={r.id} value={r.id}>{r.full_name} ({r.vehicle_type==="bike"?"🏍️ Bike":"🛺 Keke"})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Week Number</label>
+                      <input type="number" placeholder="e.g. 1" value={remitForm.week_number} onChange={e=>setRemitForm(f=>({...f,week_number:e.target.value}))}/>
+                    </div>
+                    <div className="field">
+                      <label>Amount Received (₦) *</label>
+                      <input type="number" placeholder={remitForm.rider_id?(riders.find(r=>r.id===remitForm.rider_id)?.vehicle_type==="bike"?"Expected: ₦28,000":"Expected: ₦65,000"):""} value={remitForm.amount} onChange={e=>setRemitForm(f=>({...f,amount:e.target.value}))}/>
+                    </div>
+                    <div className="field">
+                      <label>Has Local Managing Agent?</label>
+                      <select value={remitForm.has_lma} onChange={e=>setRemitForm(f=>({...f,has_lma:e.target.value==="true"}))}>
+                        <option value="true">Yes — LMA assigned</option>
+                        <option value="false">No — No LMA (RoyalTech takes LMA share)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="field">
+                    <label>Notes (optional)</label>
+                    <input placeholder="e.g. Partial payment — balance promised next week" value={remitForm.notes} onChange={e=>setRemitForm(f=>({...f,notes:e.target.value}))}/>
+                  </div>
+                  {/* Live split preview */}
+                  {remitForm.rider_id&&remitForm.amount&&(()=>{
+                    const rider = riders.find(r=>r.id===remitForm.rider_id);
+                    const vt = rider?.vehicle_type;
+                    const amt = Number(remitForm.amount);
+                    const hasLma = remitForm.has_lma;
+                    let inv=0,agent=0,rt=0,reserve=0;
+                    if(vt==="bike"){ inv=24000; reserve=1000; agent=hasLma?2000:0; rt=hasLma?1000:3000; }
+                    else { inv=55000; reserve=3000; agent=hasLma?4000:0; rt=hasLma?3000:7000; }
+                    const expected=inv+agent+rt+reserve;
+                    const scale=amt<expected?amt/expected:1;
+                    const invA=Math.floor(inv*scale), agentA=Math.floor(agent*scale), rtA=Math.floor(rt*scale), resA=amt-Math.floor(inv*scale)-Math.floor(agent*scale)-Math.floor(rt*scale);
+                    return(
+                      <div style={{background:amt<expected?"#FEF3C7":"#F0FFF4",border:"1.5px solid "+(amt<expected?"#FCD34D":"#BBF7D0"),borderRadius:8,padding:14,marginBottom:12}}>
+                        <div style={{fontWeight:700,fontSize:12,marginBottom:8,color:amt<expected?"#92400E":"#166534"}}>
+                          {amt<expected?"⚠️ SHORT PAYMENT — splits scaled proportionally":"✅ Full payment — standard split"}
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,fontSize:12}}>
+                          {[["Investor",invA,C.blue],["Agent",agentA,C.green],["RoyalTech",rtA,C.orange],["Reserve",resA,"#888"]].map(([l,v,c])=>(
+                            <div key={l} style={{textAlign:"center",background:"rgba(255,255,255,.7)",borderRadius:6,padding:8}}>
+                              <div style={{fontWeight:900,color:c,fontSize:14}}>₦{v.toLocaleString()}</div>
+                              <div style={{color:"#666",fontSize:10,marginTop:2}}>{l}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  <button style={{background:C.orange,color:C.white,border:"none",padding:"12px 24px",borderRadius:6,fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={recordRemittance}>
+                    Record Remittance & Split to Buckets
+                  </button>
+                </div>
+
+                {/* Recent remittances */}
+                <div style={{fontWeight:800,fontSize:15,marginBottom:12}}>Recent Remittances</div>
+                {remittances.length===0&&<div style={{color:C.grey,fontSize:14}}>No remittances recorded yet.</div>}
+                {remittances.map(r=>(
+                  <div key={r.id} style={{background:C.white,borderRadius:8,padding:16,marginBottom:10,border:"1.5px solid "+(r.status==="short"?"#FCD34D":C.lightgr)}}>
+                    <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:8}}>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:14}}>{r.rt_riders?.full_name||"—"} <span style={{fontSize:12,color:C.grey}}>Week {r.week_number||"—"}</span></div>
+                        <div style={{fontSize:12,color:C.grey}}>{new Date(r.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})}</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontWeight:900,fontSize:16,color:r.status==="short"?"#92400E":C.black}}>₦{r.amount_received.toLocaleString()}</div>
+                        <span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:10,background:r.status==="short"?"#FEF3C7":"#F0FFF4",color:r.status==="short"?"#92400E":"#166534"}}>{r.status==="short"?"⚠️ Short":"✅ Full"}</span>
+                      </div>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,fontSize:11}}>
+                      {[["Investor",r.investor_share,C.blue],["Agent",r.agent_share,C.green],["RoyalTech",r.royaltech_share,C.orange],["Reserve",r.reserve_share,"#888"]].map(([l,v,c])=>(
+                        <div key={l} style={{textAlign:"center",background:C.offwhite,borderRadius:4,padding:"4px 6px"}}>
+                          <div style={{fontWeight:700,color:c}}>₦{(v||0).toLocaleString()}</div>
+                          <div style={{color:C.grey,fontSize:10}}>{l}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {r.notes&&<div style={{marginTop:8,fontSize:12,color:C.grey,fontStyle:"italic"}}>{r.notes}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Buckets tab ── */}
+            {adminTab==="buckets"&&!loading&&(
+              <div>
+                <div style={{fontWeight:800,fontSize:15,marginBottom:16}}>🪣 Fund Bucket Balances</div>
+                {["bike","keke"].map(vt=>(
+                  <div key={vt} style={{marginBottom:24}}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,textTransform:"uppercase",marginBottom:12,color:C.black}}>
+                      {vt==="bike"?"🏍️ Bike":"🛺 Keke"} Buckets
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:12}}>
+                      {[
+                        {key:"investor_"+vt,   label:"Investor Pool",     color:C.blue},
+                        {key:"agent_"+vt,      label:"Agent Commission",  color:C.green},
+                        {key:"royaltech_"+vt,  label:"RoyalTech",         color:C.orange},
+                        {key:"reserve_"+vt,    label:"Reserve Fund",      color:"#888"},
+                        {key:"deposit_"+vt,    label:"Deposits Received", color:C.purple},
+                      ].map(b=>{
+                        const data = buckets[b.key]||{balance:0,total_received:0};
+                        return(
+                          <div key={b.key} style={{background:C.white,borderRadius:10,padding:16,border:"1.5px solid "+C.lightgr}}>
+                            <div style={{fontSize:11,fontWeight:700,color:b.color,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{b.label}</div>
+                            <div style={{fontWeight:900,fontSize:22,color:C.black,marginBottom:4}}>₦{(data.balance||0).toLocaleString()}</div>
+                            <div style={{fontSize:11,color:C.grey}}>Total received: ₦{(data.total_received||0).toLocaleString()}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* ── Analytics tab ── */}
             {adminTab==="analytics"&&(
               <div>
@@ -1043,10 +1243,10 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">Inclusive</span></div>
                     <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val" style={{color:C.green,fontSize:16}}>₦500,000</span></div>
                     <div className="v-row"><span className="v-lbl">Deposit spread</span><span className="v-val">3 months</span></div>
-                    <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦60,000 / week</span></div>
+                    <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦65,000 / week</span></div>
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">104 weeks</span></div>
-                    <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦6,240,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:C.green,fontSize:16}}>₦6,740,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦6,760,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:C.green,fontSize:16}}>₦7,260,000</span></div>
                     <div className="v-row"><span className="v-lbl">Discount on Hire Purchase Balance</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 / Referral of new Bike Applicant</span></div>
                     <div className="v-row"><span className="v-lbl">Discount on Hire Purchase Balance</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 / Referral of new Keke Applicant</span></div>
                     <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#166534",lineHeight:1.7}}>
@@ -1187,7 +1387,7 @@ export default function App(){
                 <div style={{background:C.white,borderRadius:8,padding:20,border:"1.5px solid #BFDBFE"}}>
                   <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🛺 Keke Tricycle</div>
                   <div className="v-row"><span className="v-lbl">Rider deposit</span><span className="v-val">₦500,000</span></div>
-                  <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦60,000 / week</span></div>
+                  <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦65,000 / week</span></div>
                   <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">104 weeks</span></div>
                 </div>
               </div>
@@ -1251,8 +1451,8 @@ export default function App(){
                   <div className="inv-body">
                     <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦1,500,000</span></div>
                     <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">78 weeks</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit">₦1,950,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit">₦450,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit">₦1,872,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit">₦372,000</span></div>
                     <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#1E40AF",lineHeight:1.7}}>
                       Returns paid monthly to your account by RoyalTech.
                     </div>
@@ -1382,7 +1582,7 @@ export default function App(){
             {modal==="rider-keke"&&(
               <>
                 <div className="modal-h cd">🛺 Keke Application</div>
-                <div className="modal-s">Keke Tricycle — ₦500,000 deposit · ₦60,000/week × 104 weeks<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Keke Tricycle — ₦500,000 deposit · ₦65,000/week × 104 weeks<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
@@ -1469,7 +1669,7 @@ export default function App(){
             {modal==="invest-bike"&&(
               <>
                 <div className="modal-h cd">🏍️ Two Wheels Investment</div>
-                <div className="modal-s">Invest ₦1,500,000 · Receive ₦1,950,000 over 78 weeks · Net profit ₦450,000<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Invest ₦1,500,000 · Receive ₦1,872,000 over 78 weeks · Net profit ₦372,000<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
