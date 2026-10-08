@@ -1515,7 +1515,7 @@ export default function App(){
                   <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Bike applicant</div><div className="ref-item-b">Get ₦100,000 taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🛺 Refer a Keke applicant</div><div className="ref-item-b">Get ₦200,000 taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🔄 No limit</div><div className="ref-item-b">No limit on referrals. Each successful one reduces what you still owe on your own vehicle.</div></div>
-                  <div className="ref-item"><div className="ref-item-t">✅ When it applies</div><div className="ref-item-b">Discount applies as soon as the person you referred pays their first deposit and becomes a committed subscriber. If they withdraw, the discount is reversed. They may also count as one of your 3 guarantors. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">✅ When it applies</div><div className="ref-item-b">Discount applies as soon as the person you referred pays their first deposit and becomes a committed subscriber. If they withdraw, the discount is reversed. Each person you refer automatically becomes one of your guarantors. And you likewise become their guarantor. Terms & Conditions apply.</div></div>
                 </div>
               </div>
             </div>
