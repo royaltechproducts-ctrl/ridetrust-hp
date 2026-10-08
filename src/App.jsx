@@ -622,20 +622,84 @@ export default function App(){
                   )}
                 </div>
 
-                {/* Deposit instructions */}
+                {/* Status-gated next steps */}
                 {riderPortal.rider_status==="not_committed"&&(
                   <div style={{background:"#FFF7ED",border:"1.5px solid #FCD34D",borderRadius:10,padding:20}}>
-                    <div style={{fontWeight:800,fontSize:14,color:"#92400E",marginBottom:10}}>Pay Your First Deposit to Become a Committed Applicant</div>
-                    <div style={{fontSize:13,color:"#92400E",lineHeight:1.8,marginBottom:12}}>
-                      {riderPortal.vehicle_type==="bike"?"Bike deposit: ₦200,000":"Keke deposit: ₦500,000"} — spread over 3 months max.
+                    <div style={{fontWeight:800,fontSize:14,color:"#92400E",marginBottom:8}}>⏳ Application Under Review</div>
+                    <div style={{fontSize:13,color:"#92400E",lineHeight:1.8}}>
+                      Your application has been received. RoyalTech is reviewing your details and will assign you a Local Managing Agent shortly. You will receive a go-ahead notification before making any financial commitments.
                     </div>
-                    <div style={{fontSize:13,color:"#92400E",lineHeight:1.9}}>
+                    <div style={{marginTop:12,fontSize:12,color:"#B45309"}}>
+                      While you wait — use your invite link on the Guarantors tab to start building your guarantors through referrals.
+                    </div>
+                  </div>
+                )}
+                {riderPortal.rider_status==="lma_linked"&&(
+                  <div>
+                    <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:10,padding:16,marginBottom:12}}>
+                      <div style={{fontWeight:800,fontSize:14,color:C.green,marginBottom:6}}>✅ Go-Ahead Received — You May Now Commit</div>
+                      <div style={{fontSize:13,color:"#166534",lineHeight:1.8}}>
+                        You have been linked to a Local Managing Agent. You may now make your referrals and pay your deposit to become a Committed Applicant.
+                      </div>
+                      {riderPortal.lma_name&&(
+                        <div style={{marginTop:10,fontSize:12,color:"#166534",background:"rgba(255,255,255,.6)",borderRadius:6,padding:"8px 12px"}}>
+                          <strong>Your Managing Agent:</strong> {riderPortal.lma_name}<br/>
+                          {riderPortal.lma_phone&&<span><strong>Phone:</strong> {riderPortal.lma_phone}<br/></span>}
+                          {riderPortal.lma_email&&<span><strong>Email:</strong> {riderPortal.lma_email}</span>}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{background:"#FFF7ED",border:"1.5px solid #FCD34D",borderRadius:10,padding:20}}>
+                      <div style={{fontWeight:800,fontSize:14,color:"#92400E",marginBottom:10}}>💰 Pay Your Deposit to Commit</div>
+                      <div style={{fontSize:13,color:"#92400E",lineHeight:1.8,marginBottom:12}}>
+                        {riderPortal.vehicle_type==="bike"?"Bike deposit: ₦200,000":"Keke deposit: ₦500,000"} — spread over 3 months max. Non-refundable except where investor matching takes more than 30 days.
+                      </div>
+                      <div style={{fontSize:13,color:"#92400E",lineHeight:1.9}}>
+                        <strong>Account Name:</strong> RoyalTech Partnership & Investment Limited<br/>
+                        <strong>Bank:</strong> Zenith Bank<br/>
+                        <strong>Account Number:</strong> 1016621205<br/>
+                        <strong>Reference:</strong> {riderPortal.referral_code}
+                      </div>
+                      <div style={{marginTop:10,fontSize:11,color:"#B45309"}}>After each payment, send proof via WhatsApp to {ADMIN_PHONE} with your reference code.</div>
+                    </div>
+                  </div>
+                )}
+                {riderPortal.rider_status==="committed_applicant"&&(
+                  <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:10,padding:20}}>
+                    <div style={{fontWeight:800,fontSize:14,color:C.blue,marginBottom:8}}>🎯 Committed Applicant — Awaiting Investor Match</div>
+                    <div style={{fontSize:13,color:"#1E40AF",lineHeight:1.8}}>
+                      Your deposit has been confirmed. RoyalTech is now matching you with a Sponsoring Investor. This takes up to 14 working days. Your vehicle will be delivered once a match is confirmed.
+                    </div>
+                    <div style={{marginTop:10,fontSize:12,color:"#1E40AF",background:"rgba(255,255,255,.6)",borderRadius:6,padding:"8px 12px"}}>
+                      ⚠️ If no investor match is made within 30 days, you are entitled to request a full refund of your deposit. Contact RoyalTech at {ADMIN_PHONE}.
+                    </div>
+                  </div>
+                )}
+                {riderPortal.rider_status==="active_rider"&&(
+                  <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:10,padding:20}}>
+                    <div style={{fontWeight:800,fontSize:14,color:C.green,marginBottom:8}}>🏍️ Active Rider — Remittance Instructions</div>
+                    <div style={{fontSize:13,color:"#166534",lineHeight:1.9}}>
+                      Pay your weekly remittance <strong>every Monday</strong> to:<br/>
                       <strong>Account Name:</strong> RoyalTech Partnership & Investment Limited<br/>
                       <strong>Bank:</strong> Zenith Bank<br/>
                       <strong>Account Number:</strong> 1016621205<br/>
                       <strong>Reference:</strong> {riderPortal.referral_code}
                     </div>
-                    <div style={{marginTop:10,fontSize:11,color:"#B45309"}}>After payment, send proof via WhatsApp to {ADMIN_PHONE} with your referral code as reference.</div>
+                    <div style={{marginTop:12,fontSize:12,color:"#166534",background:"rgba(255,255,255,.6)",borderRadius:6,padding:"10px 12px",lineHeight:1.8}}>
+                      After every payment:<br/>
+                      1. Send proof to Admin — WhatsApp: <strong>{ADMIN_PHONE}</strong> or Email: <strong>{ADMIN_EMAIL}</strong><br/>
+                      2. Copy your LMA — {riderPortal.lma_name?<span><strong>{riderPortal.lma_name}</strong> · {riderPortal.lma_phone}</span>:"(your assigned LMA)"}
+                    </div>
+                  </div>
+                )}
+                {riderPortal.rider_status==="ownership_transferred"&&(
+                  <div style={{background:C.black,borderRadius:10,padding:20,textAlign:"center",color:C.white}}>
+                    <div style={{fontSize:40,marginBottom:8}}>🏆</div>
+                    <div style={{fontWeight:900,fontSize:18,color:C.orange,marginBottom:6}}>HP COMPLETE — VEHICLE OWNED</div>
+                    <div style={{fontSize:13,color:"#AAA",lineHeight:1.8}}>
+                      Congratulations! You have completed your hire purchase agreement. Contact RoyalTech to complete the change of ownership ceremony.
+                    </div>
+                    <div style={{marginTop:12,fontSize:13,color:C.orange}}>📞 +234 806 163 1222 · 💬 {ADMIN_PHONE}</div>
                   </div>
                 )}
               </div>
@@ -911,6 +975,82 @@ export default function App(){
                       <div><span style={{color:C.grey}}>Applied: </span><strong>{new Date(r.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})}</strong></div>
                     </div>
                     {r.photo_id&&<div style={{marginBottom:12}}><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Photo ID:</div><img src={r.photo_id} alt="ID" style={{maxWidth:200,maxHeight:120,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
+                    {/* LMA Assignment */}
+                    <div style={{marginBottom:12,padding:14,background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:8}}>
+                      <div style={{fontWeight:700,fontSize:12,color:C.blue,marginBottom:8}}>🏢 LMA Assignment</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                        <input placeholder="LMA Name" defaultValue={r.lma_name||""} id={"lma-name-"+r.id}
+                          style={{padding:"6px 8px",border:"1px solid #BFDBFE",borderRadius:4,fontSize:12}}/>
+                        <input placeholder="LMA Email" defaultValue={r.lma_email||""} id={"lma-email-"+r.id}
+                          style={{padding:"6px 8px",border:"1px solid #BFDBFE",borderRadius:4,fontSize:12}}/>
+                        <input placeholder="LMA Phone" defaultValue={r.lma_phone||""} id={"lma-phone-"+r.id}
+                          style={{padding:"6px 8px",border:"1px solid #BFDBFE",borderRadius:4,fontSize:12}}/>
+                      </div>
+                      <button onClick={()=>confirmUpdate(
+                        `Link ${r.full_name} to LMA and send go-ahead email?`,
+                        async()=>{
+                          const lmaName  = document.getElementById("lma-name-"+r.id)?.value||"";
+                          const lmaEmail = document.getElementById("lma-email-"+r.id)?.value||"";
+                          const lmaPhone = document.getElementById("lma-phone-"+r.id)?.value||"";
+                          await sb.from("rt_riders").update({
+                            lma_name:lmaName, lma_email:lmaEmail, lma_phone:lmaPhone,
+                            rider_status:"lma_linked"
+                          }).eq("id",r.id);
+                          // Admin email with WhatsApp draft
+                          const vType = r.vehicle_type==="bike"?"Dispatch Bike":"Keke Tricycle";
+                          const dep   = r.vehicle_type==="bike"?"₦200,000":"₦500,000";
+                          const waMsg = `Dear ${r.full_name},\n\nYour RideTrust HP application has been reviewed and approved. You have been linked to a Local Managing Agent who will oversee your hire purchase.\n\nYour Managing Agent:\nName: ${lmaName}\nPhone: ${lmaPhone}\nEmail: ${lmaEmail}\n\nYou may now proceed to:\n1. Make your referrals to secure guarantors\n2. Pay your initial deposit of ${dep} (spread over 3 months max)\n\nPayment Details:\nAccount Name: RoyalTech Partnership & Investment Limited\nBank: Zenith Bank\nAccount Number: 1016621205\nReference: ${r.referral_code}\n\nAfter each deposit payment, send proof via WhatsApp to +234 909 999 4816 with your reference code.\n\nRideTrust HP | RoyalTech`;
+                          console.log("ADMIN — SEND THIS WHATSAPP TO "+r.phone+":\n"+waMsg);
+                          await loadData();
+                          showToast("LMA linked. Rider status updated to LMA Linked.");
+                        }
+                      )} style={{background:C.blue,color:C.white,border:"none",padding:"7px 16px",borderRadius:4,fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                        Link LMA & Send Go-Ahead
+                      </button>
+                      {r.lma_name&&<div style={{marginTop:8,fontSize:11,color:C.blue}}>✅ Currently linked to: <strong>{r.lma_name}</strong> · {r.lma_phone}</div>}
+                    </div>
+
+                    {/* Deposit confirmation button */}
+                    {(r.rider_status==="lma_linked"||r.rider_status==="committed_applicant")&&(
+                      <div style={{marginBottom:12,padding:14,background:"#FFF7ED",border:"1.5px solid #FCD34D",borderRadius:8}}>
+                        <div style={{fontWeight:700,fontSize:12,color:"#92400E",marginBottom:8}}>💰 Deposit Confirmation</div>
+                        <button onClick={()=>confirmUpdate(
+                          `Confirm full deposit received from ${r.full_name} and update to Committed Applicant?`,
+                          async()=>{
+                            await sb.from("rt_riders").update({rider_status:"committed_applicant"}).eq("id",r.id);
+                            const vType = r.vehicle_type==="bike"?"Dispatch Bike":"Keke Tricycle";
+                            const totalHP = r.vehicle_type==="bike"?"₦2,384,000":"₦7,260,000";
+                            const waMsg = `Dear ${r.full_name},\n\nYour deposit payment for the ${vType} hire purchase has been received and confirmed. You are now a COMMITTED APPLICANT on RideTrust HP.\n\nNext Steps:\n- RoyalTech will now match you with a Sponsoring Investor within 14 working days\n- Once matched, your brand new ${vType} will be delivered to you\n- If no investor match is made within 30 days, you are entitled to request a full refund of your deposit\n\nYour HP Details:\nTotal to own: ${totalHP}\nWeekly remittance starts from delivery date every Monday\n\nYour referral code: ${r.referral_code}\nKeep referring to earn discounts on your HP balance.\n\nRideTrust HP | RoyalTech`;
+                            console.log("ADMIN — SEND THIS WHATSAPP TO "+r.phone+":\n"+waMsg);
+                            await loadData();
+                            showToast("Deposit confirmed. Rider is now a Committed Applicant.");
+                          }
+                        )} style={{background:C.orange,color:C.white,border:"none",padding:"7px 16px",borderRadius:4,fontSize:12,fontWeight:700,cursor:"pointer",marginRight:8}}>
+                          ✅ Confirm Full Deposit Received
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Ownership transfer button */}
+                    {r.rider_status==="active_rider"&&(
+                      <div style={{marginBottom:12,padding:14,background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:8}}>
+                        <div style={{fontWeight:700,fontSize:12,color:C.green,marginBottom:8}}>🏆 HP Balance Clearance</div>
+                        <button onClick={()=>confirmUpdate(
+                          `Confirm HP balance cleared for ${r.full_name} and invite to ownership ceremony?`,
+                          async()=>{
+                            await sb.from("rt_riders").update({rider_status:"ownership_transferred",app_status:"completed"}).eq("id",r.id);
+                            const vType = r.vehicle_type==="bike"?"Dispatch Bike":"Keke Tricycle";
+                            const waMsg = `Dear ${r.full_name},\n\nCongratulations! 🎉\n\nYour Hire Purchase balance for your ${vType} has been fully cleared. You have successfully completed your HP agreement with RoyalTech Partnership & Investment Limited.\n\nYou are hereby invited to the ASSET CHANGE OF OWNERSHIP CEREMONY where the vehicle will be officially transferred to your name.\n\nPlease contact RoyalTech to schedule your ceremony:\nPhone: +234 806 163 1222\nWhatsApp: +234 909 999 4816\n\nThank you for being a valued RideTrust HP partner.\n\nRideTrust HP | RoyalTech`;
+                            console.log("ADMIN — SEND THIS WHATSAPP TO "+r.phone+":\n"+waMsg);
+                            await loadData();
+                            showToast("HP cleared. Ownership transfer email logged.");
+                          }
+                        )} style={{background:C.green,color:C.white,border:"none",padding:"7px 16px",borderRadius:4,fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                          🏆 HP Cleared — Invite to Ownership Ceremony
+                        </button>
+                      </div>
+                    )}
+
                     <div style={{marginBottom:8,fontSize:11,color:C.grey,fontWeight:700}}>Application Status:</div>
                     <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
                       {["under_review","valid","rejected"].map(s=>(
@@ -925,7 +1065,7 @@ export default function App(){
                     </div>
                     <div style={{marginBottom:8,fontSize:11,color:C.grey,fontWeight:700}}>Rider Status:</div>
                     <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                      {["not_committed","committed_applicant","active_rider"].map(s=>(
+                      {["not_committed","lma_linked","committed_applicant","active_rider","ownership_transferred"].map(s=>(
                         <button key={s} onClick={()=>confirmUpdate(`Set Rider Status to "${s.replace(/_/g,' ')}" for ${r.full_name}?`, ()=>sb.from('rt_riders').update({rider_status:s}).eq('id',r.id).then(loadData))}
                           style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid "+C.lightgr,
                           background:(r.rider_status||"not_committed")===s?C.blue:C.white,
