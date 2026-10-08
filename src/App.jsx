@@ -1336,7 +1336,7 @@ export default function App(){
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:20}}>
                 <div className="lma-earn">
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,marginBottom:16,color:C.white}}>Weekly Commissions</div>
-                  <div className="earn-row"><span className="earn-lbl">🏍️ Per bike managed / week</span><span className="earn-val">₦2,500</span></div>
+                  <div className="earn-row"><span className="earn-lbl">🏍️ Per bike managed / week</span><span className="earn-val">₦2,000</span></div>
                   <div className="earn-row"><span className="earn-lbl">🛺 Per keke managed / week</span><span className="earn-val">₦4,000</span></div>
                   <div style={{marginTop:12,fontSize:12,color:"#888",lineHeight:1.7}}>Paid monthly by RoyalTech from rider remittances.</div>
                 </div>
