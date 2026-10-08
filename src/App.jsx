@@ -261,6 +261,7 @@ export default function App(){
   const [guarantors,  setGuarantors]  = useState([]);
   const [referrals,   setReferrals]   = useState([]);
   const [gForm,       setGForm]       = useState({name:"",email:"",phone:""});
+  const [tpGuarantors, setTpGuarantors] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState(null); // {msg, onConfirm}
 
   const setF = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -270,12 +271,14 @@ export default function App(){
   const loadRiderPortal = async (rider) => {
     setRiderPortal(rider);
     setRPortalTab("overview");
-    const [g, r] = await Promise.all([
+    const [g, r, tp] = await Promise.all([
       sb.from("rt_guarantors").select("*").eq("beneficiary_rider_id", rider.id),
       sb.from("rt_referrals").select("*").eq("referrer_id", rider.id),
+      sb.from("rt_third_party_guarantors").select("*").eq("rider_id", rider.id),
     ]);
     if(g.data) setGuarantors(g.data);
     if(r.data) setReferrals(r.data);
+    if(tp.data) setTpGuarantors(tp.data);
   };
 
   const handleRiderLogin = async () => {
@@ -416,6 +419,35 @@ export default function App(){
           rider_status: "not_committed",
           hp_discount_balance: 0,
         }).select().single();
+        // Auto mutual guarantee — if referred by someone, link them
+        if(form.referrer&&newRider){
+          // Find referrer by name or phone
+          const {data:referrers} = await sb.from("rt_riders").select("*")
+            .or(`phone.ilike.%${form.referrer}%,full_name.ilike.%${form.referrer}%`);
+          if(referrers&&referrers.length>0){
+            const referrer = referrers[0];
+            // Referrer becomes new rider's guarantor (mutual)
+            await sb.from("rt_guarantors").insert({
+              guarantor_rider_id: referrer.id,
+              beneficiary_rider_id: newRider.id,
+              guarantor_name: referrer.full_name,
+              guarantor_email: referrer.email,
+              guarantor_phone: referrer.phone,
+              status: "pending",
+              guarantee_type: "mutual",
+            });
+            // New rider becomes referrer's guarantor (mutual)
+            await sb.from("rt_guarantors").insert({
+              guarantor_rider_id: newRider.id,
+              beneficiary_rider_id: referrer.id,
+              guarantor_name: newRider.full_name,
+              guarantor_email: newRider.email,
+              guarantor_phone: newRider.phone,
+              status: "pending",
+              guarantee_type: "mutual",
+            });
+          }
+        }
         // Admin notification email
         const vType = type==="rider-bike"?"Dispatch Bike":"Keke Tricycle";
         const waMsg = `New RideTrust ${vType} Application\n\nName: ${form.name}\nPhone: ${form.phone}\nEmail: ${form.email}\nAddress: ${form.address||"—"}\nExperience: ${form.experience||"—"}\nReferral Code: ${rcode}\n\nAction Required: Review ID and update application status.`;
@@ -612,102 +644,156 @@ export default function App(){
             {/* Guarantors tab */}
             {rPortalTab==="guarantors"&&(
               <div>
+                {/* Status */}
                 <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:16}}>
                   <div style={{fontWeight:800,fontSize:15,marginBottom:4}}>My Guarantors</div>
-                  <div style={{fontSize:12,color:C.grey,marginBottom:16}}>You need a minimum of 2 confirmed guarantors before delivery.</div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-                    {[0,1].map(i=>{
-                      const g = guarantors[i];
-                      return(
-                        <div key={i} style={{background:g?C.offwhite:"#F9F9F9",borderRadius:8,padding:14,border:"1.5px solid "+(g&&g.status==="confirmed"?C.green:C.lightgr),textAlign:"center"}}>
-                          <div style={{fontSize:24,marginBottom:6}}>{g&&g.status==="confirmed"?"✅":g?"⏳":"👤"}</div>
-                          <div style={{fontWeight:700,fontSize:13,color:g&&g.status==="confirmed"?C.green:C.grey}}>
-                            {g?g.guarantor_name:`Guarantor ${i+1} — Empty`}
-                          </div>
-                          {g&&<div style={{fontSize:11,color:C.grey,marginTop:2}}>{g.status==="confirmed"?"Confirmed":"Pending confirmation"}</div>}
+                  <div style={{fontSize:12,color:C.grey,marginBottom:16}}>You need a minimum of 2 confirmed guarantors before delivery. Your referrer is automatically your first guarantor.</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+                    {[...guarantors,...tpGuarantors.map(t=>({guarantor_name:t.guarantor_name,status:t.status,guarantee_type:"third_party"}))].slice(0,4).map((g,i)=>(
+                      <div key={i} style={{background:C.offwhite,borderRadius:8,padding:14,border:"1.5px solid "+(g.status==="confirmed"?C.green:g.status==="pending"?"#FCD34D":C.lightgr),textAlign:"center"}}>
+                        <div style={{fontSize:22,marginBottom:4}}>{g.status==="confirmed"?"✅":g.status==="pending"?"⏳":"👤"}</div>
+                        <div style={{fontWeight:700,fontSize:13,color:g.status==="confirmed"?C.green:C.grey}}>{g.guarantor_name}</div>
+                        <div style={{fontSize:10,color:C.grey,marginTop:2}}>
+                          {g.guarantee_type==="mutual"?"🔗 Mutual Guarantee":g.guarantee_type==="third_party"?"📋 Third Party":"Platform Guarantee"} · {g.status}
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
+                    {Array.from({length:Math.max(0,2-guarantors.length-tpGuarantors.length)}).map((_,i)=>(
+                      <div key={"empty"+i} style={{background:"#F9F9F9",borderRadius:8,padding:14,border:"1.5px dashed "+C.lightgr,textAlign:"center"}}>
+                        <div style={{fontSize:22,marginBottom:4}}>👤</div>
+                        <div style={{fontWeight:600,fontSize:13,color:C.grey}}>Guarantor slot empty</div>
+                      </div>
+                    ))}
                   </div>
-                  {guarantors.length<2&&(
-                    <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:8,padding:14,fontSize:13,color:C.blue,lineHeight:1.8}}>
-                      <strong>How to get guarantors:</strong><br/>
-                      1. Share your referral code <strong style={{color:C.orange}}>{riderPortal.referral_code}</strong> — anyone who signs up and pays their first deposit automatically becomes your guarantor.<br/>
-                      2. Ask an existing committed applicant or rider to go to their portal and fill the guarantor form with your details.
-                    </div>
-                  )}
+
+                  {/* How to get guarantors */}
+                  <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:8,padding:14,fontSize:13,color:C.blue,lineHeight:1.9}}>
+                    <strong>Two ways to get your second guarantor:</strong><br/>
+                    <strong>1. Mutual Guarantee (Fastest)</strong> — Share your invite link below. When someone signs up through your link and commits with first deposit, you both automatically guarantee each other. No forms. No stress.<br/>
+                    <strong>2. Third Party Guarantor</strong> — Download the guarantor form below, hand it to a credible individual (employed or business owner). They fill, attach proof of capacity and send back to you to upload on your portal.
+                  </div>
                 </div>
 
-                {/* Referral invite */}
-                <div style={{background:C.black,borderRadius:10,padding:20,color:C.white}}>
-                  <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>🔗 Your Referral / Invite Link</div>
-                  <div style={{background:"#1A1A1A",borderRadius:6,padding:"10px 14px",fontSize:13,color:C.orange,fontFamily:"monospace",marginBottom:10,wordBreak:"break-all"}}>
+                {/* Invite link */}
+                <div style={{background:C.black,borderRadius:10,padding:20,color:C.white,marginBottom:16}}>
+                  <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>🔗 Your Mutual Guarantee Invite Link</div>
+                  <div style={{background:"#1A1A1A",borderRadius:6,padding:"10px 14px",fontSize:12,color:C.orange,fontFamily:"monospace",marginBottom:10,wordBreak:"break-all"}}>
                     tbvap.vercel.app/#/ride?ref={riderPortal.referral_code}
                   </div>
-                  <div style={{fontSize:12,color:"#AAA",lineHeight:1.7}}>
-                    Share this link. When someone signs up through it and pays their first deposit, they automatically become your guarantor AND you earn a referral discount on your HP balance.
-                  </div>
+                  <div style={{fontSize:12,color:"#AAA",lineHeight:1.7,marginBottom:12}}>Share this link. When someone signs up and commits, you both automatically become guarantors for each other — AND you earn a referral discount on your HP balance.</div>
                   <button onClick={()=>{navigator.clipboard.writeText("tbvap.vercel.app/#/ride?ref="+riderPortal.referral_code);showToast("Link copied!");}}
-                    style={{marginTop:12,background:C.orange,color:C.white,border:"none",padding:"10px 20px",borderRadius:6,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                    style={{background:C.orange,color:C.white,border:"none",padding:"10px 20px",borderRadius:6,fontSize:13,fontWeight:700,cursor:"pointer"}}>
                     Copy Invite Link
                   </button>
+                </div>
+
+                {/* Third party guarantor */}
+                <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr}}>
+                  <div style={{fontWeight:800,fontSize:15,marginBottom:8}}>📋 Third Party Guarantor</div>
+                  <div style={{fontSize:13,color:C.grey,lineHeight:1.8,marginBottom:16}}>
+                    Download the guarantor form, hand it to a credible individual — someone with a good paying job or a thriving business. They fill the form, attach proof of capacity (employment letter, business registration or bank statement), and return it to you. Upload the completed form below.
+                  </div>
+                  <button onClick={()=>{
+                    // Generate and download PDF guarantor form
+                    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>RideTrust HP — Guarantor Form</title>
+                    <style>body{font-family:Arial,sans-serif;padding:40px;color:#111;max-width:700px;margin:0 auto;}
+                    h1{color:#E8620A;font-size:24px;margin-bottom:4px;}h2{font-size:16px;color:#555;margin-bottom:24px;font-weight:400;}
+                    .section{border:1px solid #DDD;border-radius:8px;padding:20px;margin-bottom:20px;}
+                    .section h3{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:14px;}
+                    .field{margin-bottom:14px;}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:#444;}
+                    .field .line{border-bottom:1px solid #999;min-height:24px;margin-top:4px;}
+                    .declaration{background:#FFF7ED;border:1px solid #FCD34D;border-radius:6px;padding:16px;font-size:12px;line-height:1.8;margin-top:20px;}
+                    .sign-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;}
+                    .footer{text-align:center;font-size:11px;color:#888;margin-top:32px;border-top:1px solid #EEE;padding-top:16px;}
+                    </style></head><body>
+                    <h1>RIDETRUST HP</h1><h2>Third Party Guarantor Form — Powered by RoyalTech Partnership & Investment Limited</h2>
+                    <div class="section"><h3>Applicant Details (to be filled by the applicant)</h3>
+                      <div class="field"><label>Full Name of Applicant</label><div class="line"></div></div>
+                      <div class="field"><label>Applicant Phone Number</label><div class="line"></div></div>
+                      <div class="field"><label>Applicant Email Address</label><div class="line"></div></div>
+                      <div class="field"><label>Applicant Referral Code</label><div class="line">${riderPortal.referral_code}</div></div>
+                      <div class="field"><label>Vehicle Type Applied For</label><div class="line">${riderPortal.vehicle_type==="bike"?"Dispatch Bike (HP Value: ₦2,384,000)":"Keke Tricycle (HP Value: ₦7,260,000)"}</div></div>
+                    </div>
+                    <div class="section"><h3>Guarantor Details (to be filled by the guarantor)</h3>
+                      <div class="field"><label>Full Name of Guarantor</label><div class="line"></div></div>
+                      <div class="field"><label>Phone Number</label><div class="line"></div></div>
+                      <div class="field"><label>Email Address</label><div class="line"></div></div>
+                      <div class="field"><label>Home Address</label><div class="line"></div></div>
+                      <div class="field"><label>Occupation / Business</label><div class="line"></div></div>
+                      <div class="field"><label>Employer / Business Name and Address</label><div class="line"></div></div>
+                      <div class="field"><label>Proof of Capacity Attached (tick one): &nbsp;[ ] Employment Letter &nbsp;[ ] Business Registration &nbsp;[ ] Bank Statement</label><div class="line"></div></div>
+                    </div>
+                    <div class="declaration">
+                      <strong>Declaration by Guarantor:</strong><br/>
+                      I, the undersigned, hereby voluntarily agree to serve as a guarantor for the above-named applicant on the RideTrust HP hire purchase platform operated by RoyalTech Partnership & Investment Limited. I understand that by signing this form, I am confirming that I know the applicant personally and I vouch for their character and commitment to honour their weekly hire purchase obligations. I acknowledge that this guarantee is subject to the Terms and Conditions of RideTrust HP and RoyalTech Partnership & Investment Limited.
+                    </div>
+                    <div class="sign-row">
+                      <div class="field"><label>Guarantor Signature</label><div class="line" style="min-height:40px;"></div></div>
+                      <div class="field"><label>Date</label><div class="line" style="min-height:40px;"></div></div>
+                    </div>
+                    <div class="footer">RideTrust HP · Powered by RoyalTech Partnership & Investment Limited · +234 909 999 4816 · tbvap.vercel.app</div>
+                    </body></html>`;
+                    const blob = new Blob([html],{type:"text/html"});
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = "RideTrust_Guarantor_Form_"+riderPortal.referral_code+".html";
+                    a.click();
+                    showToast("Guarantor form downloaded. Print and hand to your guarantor.");
+                  }} style={{background:C.blue,color:C.white,border:"none",padding:"12px 20px",borderRadius:6,fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:16}}>
+                    📥 Download Guarantor Form (Print & Hand Out)
+                  </button>
+
+                  {/* Upload completed form */}
+                  <div style={{borderTop:"1px solid "+C.lightgr,paddingTop:16,marginTop:4}}>
+                    <div style={{fontWeight:700,fontSize:13,marginBottom:8}}>Upload Completed & Signed Form</div>
+                    <div className="field"><label>Guarantor Full Name *</label><input placeholder="As written on the form" value={gForm.name} onChange={e=>setGForm(f=>({...f,name:e.target.value}))}/></div>
+                    <div className="field"><label>Guarantor Phone *</label><input type="tel" placeholder="+234 xxx xxx xxxx" value={gForm.phone} onChange={e=>setGForm(f=>({...f,phone:e.target.value}))}/></div>
+                    <div className="field"><label>Guarantor Email</label><input type="email" placeholder="Optional" value={gForm.email} onChange={e=>setGForm(f=>({...f,email:e.target.value}))}/></div>
+                    <div className="field"><label>Guarantor Occupation / Business</label><input placeholder="e.g. Civil Servant, Trader" value={gForm.occupation||""} onChange={e=>setGForm(f=>({...f,occupation:e.target.value}))}/></div>
+                    <div className="field">
+                      <label>Upload Signed Form + Proof of Capacity *</label>
+                      <button className="snap-btn" style={{borderColor:"#93C5FD",color:C.blue,background:"#EFF6FF"}} onClick={()=>document.getElementById("snap-tp-form").click()}>
+                        <span>📷</span><span>{gForm.proofDoc?"✅ Document captured — tap to retake":"Tap to photograph the completed form"}</span>
+                      </button>
+                      <input id="snap-tp-form" type="file" accept="image/*,application/pdf" capture="environment" style={{display:"none"}}
+                        onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setGForm(g=>({...g,proofDoc:ev.target.result}));r.readAsDataURL(f);}}/>
+                    </div>
+                    <button style={{background:C.orange,color:C.white,border:"none",padding:"12px 20px",borderRadius:6,fontWeight:700,fontSize:13,cursor:"pointer",width:"100%"}}
+                      onClick={async()=>{
+                        if(!gForm.name.trim()||!gForm.phone.trim()||!gForm.proofDoc){showToast("Please fill guarantor name, phone and upload the signed form.");return;}
+                        await sb.from("rt_third_party_guarantors").insert({
+                          rider_id: riderPortal.id,
+                          guarantor_name: gForm.name,
+                          guarantor_phone: gForm.phone,
+                          guarantor_email: gForm.email||null,
+                          guarantor_occupation: gForm.occupation||null,
+                          proof_document: gForm.proofDoc,
+                          status: "pending",
+                        });
+                        setGForm({name:"",email:"",phone:"",occupation:"",proofDoc:""});
+                        await loadRiderPortal(riderPortal);
+                        showToast("Third party guarantor submitted. RoyalTech will review within 48 hours.");
+                      }}>
+                      Submit Third Party Guarantor
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Guarantee Someone tab */}
-            {rPortalTab==="guarantee"&&(()=>{
-              const alreadyGuarantor = guarantors.some(g=>g.guarantor_rider_id===riderPortal.id&&g.status!=="rejected");
-              return(
-                <div>
-                  <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr}}>
-                    <div style={{fontWeight:800,fontSize:15,marginBottom:4}}>Guarantee Another Rider</div>
-                    <div style={{fontSize:12,color:C.grey,marginBottom:16,lineHeight:1.7}}>
-                      You can willingly serve as a guarantor for another rider on the platform — but only one at a time. Enter the exact name, email and phone the applicant used when they registered.
-                    </div>
-                    {alreadyGuarantor?(
-                      <div style={{background:"#FEF3C7",border:"1.5px solid #FCD34D",borderRadius:8,padding:14,fontSize:13,color:"#92400E"}}>
-                        ⚠️ You are already serving as a guarantor for another rider. You cannot guarantee a second applicant until your current commitment is complete or released.
-                      </div>
-                    ):(
-                      <>
-                        <div className="field"><label>Applicant Full Name *</label><input placeholder="Exact name as registered" value={gForm.name} onChange={e=>setGForm(f=>({...f,name:e.target.value}))}/></div>
-                        <div className="field"><label>Applicant Email *</label><input type="email" placeholder="Exact email as registered" value={gForm.email} onChange={e=>setGForm(f=>({...f,email:e.target.value}))}/></div>
-                        <div className="field"><label>Applicant Phone *</label><input type="tel" placeholder="Exact phone as registered" value={gForm.phone} onChange={e=>setGForm(f=>({...f,phone:e.target.value}))}/></div>
-                        <button style={{background:C.orange,color:C.white,border:"none",padding:"12px 24px",borderRadius:6,fontWeight:700,fontSize:14,cursor:"pointer",width:"100%",marginTop:8}}
-                          onClick={async()=>{
-                            if(!gForm.name.trim()||!gForm.email.trim()||!gForm.phone.trim()){showToast("Please fill all fields.");return;}
-                            // Find the applicant
-                            const {data:applicants} = await sb.from("rt_riders")
-                              .select("*")
-                              .ilike("email",gForm.email.trim())
-                              .ilike("phone",gForm.phone.trim());
-                            if(!applicants||applicants.length===0){showToast("No applicant found with those details. Please check and try again.");return;}
-                            const applicant = applicants[0];
-                            if(applicant.id===riderPortal.id){showToast("You cannot guarantee yourself.");return;}
-                            // Check applicant already has 2 guarantors
-                            const {data:existingG} = await sb.from("rt_guarantors").select("*").eq("beneficiary_rider_id",applicant.id).neq("status","rejected");
-                            if(existingG&&existingG.length>=2){showToast("This applicant already has 2 confirmed guarantors.");return;}
-                            // Submit guarantee
-                            await sb.from("rt_guarantors").insert({
-                              guarantor_rider_id: riderPortal.id,
-                              beneficiary_rider_id: applicant.id,
-                              guarantor_name: riderPortal.full_name,
-                              guarantor_email: riderPortal.email,
-                              guarantor_phone: riderPortal.phone,
-                              status: "pending",
-                            });
-                            setGForm({name:"",email:"",phone:""});
-                            showToast("Guarantee submitted successfully for "+applicant.full_name+". Thank you.");
-                          }}>
-                          Submit Guarantee
-                        </button>
-                      </>
-                    )}
-                  </div>
+            {/* Guarantee Someone tab — REMOVED, replaced by mutual guarantee */}
+            {rPortalTab==="guarantee"&&(
+              <div style={{background:C.white,borderRadius:10,padding:24,border:"1.5px solid "+C.lightgr,textAlign:"center"}}>
+                <div style={{fontSize:32,marginBottom:12}}>🔗</div>
+                <div style={{fontWeight:800,fontSize:15,marginBottom:8}}>Mutual Guarantee is Automatic</div>
+                <div style={{fontSize:13,color:C.grey,lineHeight:1.8,maxWidth:400,margin:"0 auto"}}>
+                  When you refer someone through your invite link and they commit with their first deposit, you both automatically guarantee each other. No forms needed. Share your link and let the system handle it.
                 </div>
-              );
-            })()}
+                <button onClick={()=>setRPortalTab("guarantors")} style={{marginTop:16,background:C.orange,color:C.white,border:"none",padding:"10px 20px",borderRadius:6,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                  Go to My Guarantors
+                </button>
+              </div>
+            )}
 
             {/* Referral discounts tab */}
             {rPortalTab==="referrals"&&(
