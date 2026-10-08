@@ -190,7 +190,7 @@ const CONTACT = [
 const RIDER_STEPS = [
   {n:"01",t:"Apply Online",b:"Fill the short application form. Free. No fees."},
   {n:"02",t:"Get Approved",b:"RoyalTech reviews and sends you a commitment request."},
-  {n:"03",t:"3 Guarantors",b:"Bring 3 guarantors. Each guarantor must be either a committed applicant or an existing rider already on the RideTrust platform."},
+  {n:"03",t:"2 Guarantors",b:"Bring 2 guarantors. Each guarantor must be either a committed applicant or an existing rider already on the RideTrust platform."},
   {n:"04",t:"Pay Deposit",b:"Bike: ₦200,000 · Keke: ₦500,000. Spread over 3 months max. All 3 guarantors must be confirmed before deposit is accepted."},
   {n:"05",t:"Take Delivery",b:"Collect your brand new vehicle. Start earning immediately."},
   {n:"06",t:"Weekly Remittance",b:"Pay weekly to RoyalTech. Submit proof to your Managing Agent."},
