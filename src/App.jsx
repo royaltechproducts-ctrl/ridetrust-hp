@@ -1224,7 +1224,6 @@ export default function App(){
                     const vt = rider?.vehicle_type;
                     const amt = Number(remitForm.amount);
                     const hasLma = remitForm.has_lma;
-                    let inv=0,agent=0,rt=0,reserve=0;
                     const sp2 = SPLIT[vt]||SPLIT.keke;
                     let inv=sp2.inv, agent=hasLma?sp2.lma:0, rt=hasLma?sp2.rt:sp2.rt+sp2.lma, reserve=sp2.reserve;
                     const expected=inv+agent+rt+reserve;
