@@ -1831,12 +1831,30 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">78 weeks</span></div>
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦1,950,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val hi">₦2,350,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 off per Bike referral</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 off per Keke referral</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 off per Mini (Korope) referral</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦300,000 off per Full Bus/Cab referral</span></div>
-                    <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#166534",lineHeight:1.7}}>
-                      🎯 <strong>Referral Discount:</strong> Each confirmed referral shortens your repayment — same ₦25,000/week, fewer weeks. No limit on referrals.
+                    <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.orange,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider Referral Bonuses</div>
+                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Minibus rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦300,000 off your HP</span></div>
+                      <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#166534",lineHeight:1.6}}>
+                        Each confirmed referral reduces your outstanding balance — same ₦25,000/week, fewer weeks. No limit on referrals.
+                      </div>
+                    </div>
+                    <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.blue,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🤝 LMA Referral Bonuses</div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Bike applicant</span><span className="v-val" style={{color:C.blue}}>₦100,000 cash</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Keke applicant</span><span className="v-val" style={{color:C.blue}}>₦200,000 cash</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Minibus applicant</span><span className="v-val" style={{color:C.blue}}>₦250,000 cash</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Full Bus applicant</span><span className="v-val" style={{color:C.blue}}>₦300,000 cash</span></div>
+                      <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#1e40af",lineHeight:1.6}}>
+                        <strong>LMA Referral T&amp;Cs:</strong><br/>
+                        1. Bonus is paid <em>only</em> after the referred applicant takes delivery of their vehicle and makes their first weekly remittance.<br/>
+                        2. If the referred applicant withdraws before delivery, the bonus is forfeited and reversed if already advanced.<br/>
+                        3. The referring LMA must have at least one active rider under management at time of payout.<br/>
+                        4. The referred applicant must not already be registered under another LMA on the platform.<br/>
+                        5. LMA remains co-guarantor for the referred rider for the first 12 weeks of their HP term.
+                      </div>
                     </div>
                     <button className="btn btn-orange btn-full" onClick={()=>setModal("rider-bike")}>Apply for This Bike</button>
                   </div>
@@ -1860,12 +1878,30 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">104 weeks</span></div>
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦6,240,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:C.green,fontSize:16}}>₦6,840,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 off per Bike referral</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 off per Keke referral</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 off per Mini (Korope) referral</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦300,000 off per Full Bus/Cab referral</span></div>
-                    <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#166534",lineHeight:1.7}}>
-                      🎯 <strong>Referral Discount:</strong> Each confirmed referral shortens your repayment — same ₦60,000/week, fewer weeks. No limit on referrals.
+                    <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.green,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider Referral Bonuses</div>
+                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Minibus rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦300,000 off your HP</span></div>
+                      <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#166534",lineHeight:1.6}}>
+                        Each confirmed referral reduces your outstanding balance — same ₦60,000/week, fewer weeks. No limit on referrals.
+                      </div>
+                    </div>
+                    <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.blue,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🤝 LMA Referral Bonuses</div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Bike applicant</span><span className="v-val" style={{color:C.blue}}>₦100,000 cash</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Keke applicant</span><span className="v-val" style={{color:C.blue}}>₦200,000 cash</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Minibus applicant</span><span className="v-val" style={{color:C.blue}}>₦250,000 cash</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Full Bus applicant</span><span className="v-val" style={{color:C.blue}}>₦300,000 cash</span></div>
+                      <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#1e40af",lineHeight:1.6}}>
+                        <strong>LMA Referral T&amp;Cs:</strong><br/>
+                        1. Bonus is paid <em>only</em> after the referred applicant takes delivery of their vehicle and makes their first weekly remittance.<br/>
+                        2. If the referred applicant withdraws before delivery, the bonus is forfeited and reversed if already advanced.<br/>
+                        3. The referring LMA must have at least one active rider under management at time of payout.<br/>
+                        4. The referred applicant must not already be registered under another LMA on the platform.<br/>
+                        5. LMA remains co-guarantor for the referred rider for the first 12 weeks of their HP term.
+                      </div>
                     </div>
                     <button className="btn btn-full" style={{background:C.green,color:C.white,marginTop:12}} onClick={()=>setModal("rider-keke")}>Apply for This Keke</button>
                   </div>
@@ -1874,10 +1910,10 @@ export default function App(){
                 {/* 4-Wheel Mini */}
                 <div className="v-card">
                   <div className="v-head" style={{background:"#1A1A4A"}}>
-                    <div className="v-tag">Four Wheels — Mini</div>
+                    <div className="v-tag">Four Wheels — Minibus</div>
                     <div className="v-emoji">🚐</div>
-                    <div className="v-name cd">Clean Tokunbo Korope</div>
-                    <div className="v-desc">Clean tokunbo minibus (Korope). Insurance and plate registration included.</div>
+                    <div className="v-name cd">Minibus (Korope)</div>
+                    <div className="v-desc">Clean tokunbo Korope minibus. Insurance and plate registration included.</div>
                   </div>
                   <div className="v-body">
                     <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val" style={{color:C.grey}}>₦7,000,000</span></div>
@@ -1889,23 +1925,41 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">156 weeks</span></div>
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦10,920,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:"#6366F1",fontSize:16}}>₦11,720,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#3730A3"}}>₦100,000 off per Bike referral</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#3730A3"}}>₦200,000 off per Keke referral</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#3730A3"}}>₦250,000 off per Mini (Korope) referral</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#3730A3"}}>₦300,000 off per Full Bus/Cab referral</span></div>
-                    <div style={{background:"#EEF2FF",border:"1.5px solid #C7D2FE",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#3730A3",lineHeight:1.7}}>
-                      🎯 <strong>Referral Discount:</strong> Same weekly rate — referrals shorten your term. No limit on referrals.
+                    <div style={{borderTop:"1.5px solid #C7D2FE",margin:"10px 0 6px",paddingTop:8}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#4338CA",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider Referral Bonuses</div>
+                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#3730A3"}}>₦100,000 off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#3730A3"}}>₦200,000 off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Minibus rider</span><span className="v-val" style={{color:"#3730A3"}}>₦250,000 off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab rider</span><span className="v-val" style={{color:"#3730A3"}}>₦300,000 off your HP</span></div>
+                      <div style={{background:"#EEF2FF",border:"1.5px solid #C7D2FE",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#3730A3",lineHeight:1.6}}>
+                        Each confirmed referral reduces your outstanding balance — same ₦70,000/week, fewer weeks. No limit on referrals.
+                      </div>
                     </div>
-                    <button className="btn btn-full" style={{background:"#4338CA",color:C.white,marginTop:12}} onClick={()=>setModal("rider-mini")}>Apply for Korope Mini</button>
+                    <div style={{borderTop:"1.5px solid #C7D2FE",margin:"10px 0 6px",paddingTop:8}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.blue,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🤝 LMA Referral Bonuses</div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Bike applicant</span><span className="v-val" style={{color:C.blue}}>₦100,000 cash</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Keke applicant</span><span className="v-val" style={{color:C.blue}}>₦200,000 cash</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Minibus applicant</span><span className="v-val" style={{color:C.blue}}>₦250,000 cash</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Full Bus applicant</span><span className="v-val" style={{color:C.blue}}>₦300,000 cash</span></div>
+                      <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#1e40af",lineHeight:1.6}}>
+                        <strong>LMA Referral T&amp;Cs:</strong><br/>
+                        1. Bonus is paid <em>only</em> after the referred applicant takes delivery of their vehicle and makes their first weekly remittance.<br/>
+                        2. If the referred applicant withdraws before delivery, the bonus is forfeited and reversed if already advanced.<br/>
+                        3. The referring LMA must have at least one active rider under management at time of payout.<br/>
+                        4. The referred applicant must not already be registered under another LMA on the platform.<br/>
+                        5. LMA remains co-guarantor for the referred rider for the first 12 weeks of their HP term.
+                      </div>
+                    </div>
+                    <button className="btn btn-full" style={{background:"#4338CA",color:C.white,marginTop:12}} onClick={()=>setModal("rider-mini")}>Apply for Minibus (Korope)</button>
                   </div>
                 </div>
 
                 {/* 4-Wheel Full */}
                 <div className="v-card">
                   <div className="v-head" style={{background:"#4A1A0A"}}>
-                    <div className="v-tag">Four Wheels — Full Option</div>
+                    <div className="v-tag">Four Wheels — Full Bus / Cab</div>
                     <div className="v-emoji">🚌</div>
-                    <div className="v-name cd">Full Hiace Bus / Cab Ride</div>
+                    <div className="v-name cd">Full Bus / Cab Ride</div>
                     <div className="v-desc">Full-size Hiace bus or cab ride vehicle. Insurance and plate registration included.</div>
                   </div>
                   <div className="v-body">
@@ -1918,12 +1972,30 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">156 weeks</span></div>
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦14,040,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:"#DC2626",fontSize:16}}>₦15,040,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#991B1B"}}>₦100,000 off per Bike referral</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#991B1B"}}>₦200,000 off per Keke referral</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#991B1B"}}>₦250,000 off per Mini (Korope) referral</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#991B1B"}}>₦300,000 off per Full Bus/Cab referral</span></div>
-                    <div style={{background:"#FEF2F2",border:"1.5px solid #FECACA",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#991B1B",lineHeight:1.7}}>
-                      🎯 <strong>Referral Discount:</strong> Same weekly rate — referrals shorten your term. No limit on referrals.
+                    <div style={{borderTop:"1.5px solid #FECACA",margin:"10px 0 6px",paddingTop:8}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#DC2626",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider Referral Bonuses</div>
+                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#991B1B"}}>₦100,000 off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#991B1B"}}>₦200,000 off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Minibus rider</span><span className="v-val" style={{color:"#991B1B"}}>₦250,000 off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab rider</span><span className="v-val" style={{color:"#991B1B"}}>₦300,000 off your HP</span></div>
+                      <div style={{background:"#FEF2F2",border:"1.5px solid #FECACA",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#991B1B",lineHeight:1.6}}>
+                        Each confirmed referral reduces your outstanding balance — same ₦90,000/week, fewer weeks. No limit on referrals.
+                      </div>
+                    </div>
+                    <div style={{borderTop:"1.5px solid #FECACA",margin:"10px 0 6px",paddingTop:8}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.blue,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🤝 LMA Referral Bonuses</div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Bike applicant</span><span className="v-val" style={{color:C.blue}}>₦100,000 cash</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Keke applicant</span><span className="v-val" style={{color:C.blue}}>₦200,000 cash</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Minibus applicant</span><span className="v-val" style={{color:C.blue}}>₦250,000 cash</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a committed Full Bus applicant</span><span className="v-val" style={{color:C.blue}}>₦300,000 cash</span></div>
+                      <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#1e40af",lineHeight:1.6}}>
+                        <strong>LMA Referral T&amp;Cs:</strong><br/>
+                        1. Bonus is paid <em>only</em> after the referred applicant takes delivery of their vehicle and makes their first weekly remittance.<br/>
+                        2. If the referred applicant withdraws before delivery, the bonus is forfeited and reversed if already advanced.<br/>
+                        3. The referring LMA must have at least one active rider under management at time of payout.<br/>
+                        4. The referred applicant must not already be registered under another LMA on the platform.<br/>
+                        5. LMA remains co-guarantor for the referred rider for the first 12 weeks of their HP term.
+                      </div>
                     </div>
                     <button className="btn btn-full" style={{background:"#B91C1C",color:C.white,marginTop:12}} onClick={()=>setModal("rider-full")}>Apply for Full Bus / Cab</button>
                   </div>
@@ -2009,18 +2081,90 @@ export default function App(){
               <h2 className="sec-h2">Your Commission & Bonuses</h2>
               <div className="divider" style={{background:C.blue}}/>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:20}}>
+
+                {/* Card 1 — Weekly commission from remittances */}
                 <div className="lma-earn">
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,marginBottom:16,color:C.white}}>Weekly Commissions</div>
-                  <div className="earn-row"><span className="earn-lbl">🏍️ Per bike managed / week</span><span className="earn-val">₦2,000</span></div>
-                  <div className="earn-row"><span className="earn-lbl">🛺 Per keke managed / week</span><span className="earn-val">₦4,000</span></div>
-                  <div style={{marginTop:12,fontSize:12,color:"#888",lineHeight:1.7}}>Paid monthly by RoyalTech from rider remittances.</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>💰 Weekly Commission</div>
+                  <div style={{fontSize:11,color:"#94A3B8",marginBottom:14,lineHeight:1.5}}>Earned on every successful rider remittance you collect and confirm. Paid monthly by RoyalTech.</div>
+                  <div className="earn-row"><span className="earn-lbl">🏍️ Per bike / week</span><span className="earn-val">₦2,000</span></div>
+                  <div className="earn-row"><span className="earn-lbl">🛺 Per keke / week</span><span className="earn-val">₦4,000</span></div>
+                  <div className="earn-row"><span className="earn-lbl">🚐 Per minibus / week</span><span className="earn-val">₦6,000</span></div>
+                  <div className="earn-row"><span className="earn-lbl">🚌 Per full bus / week</span><span className="earn-val">₦8,000</span></div>
+                  <div style={{marginTop:12,fontSize:11,color:"#64748B",lineHeight:1.6,borderTop:"1px solid #334155",paddingTop:10}}>
+                    ✅ Redeemable: After rider submits remittance proof and payment is confirmed by RoyalTech.
+                  </div>
                 </div>
+
+                {/* Card 2 — Rider/Driver referral bonus */}
                 <div className="lma-earn">
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,marginBottom:16,color:C.white}}>Referral Bonuses</div>
-                  <div className="earn-row"><span className="earn-lbl">🏍️ Per bike referral</span><span className="earn-val">₦100,000</span></div>
-                  <div className="earn-row"><span className="earn-lbl">🛺 Per keke referral</span><span className="earn-val">₦200,000</span></div>
-                  <div style={{marginTop:12,fontSize:12,color:"#888",lineHeight:1.7}}>Paid only when the referred rider takes delivery of their vehicle.</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>🎁 Rider Referral Bonus</div>
+                  <div style={{fontSize:11,color:"#94A3B8",marginBottom:14,lineHeight:1.5}}>Earned for each rider/driver you recruit who successfully takes delivery of their vehicle.</div>
+                  <div className="earn-row"><span className="earn-lbl">🏍️ Refer a bike rider</span><span className="earn-val">₦100,000</span></div>
+                  <div className="earn-row"><span className="earn-lbl">🛺 Refer a keke rider</span><span className="earn-val">₦200,000</span></div>
+                  <div className="earn-row"><span className="earn-lbl">🚐 Refer a minibus rider</span><span className="earn-val">₦250,000</span></div>
+                  <div className="earn-row"><span className="earn-lbl">🚌 Refer a full bus rider</span><span className="earn-val">₦300,000</span></div>
+                  <div style={{marginTop:12,fontSize:11,color:"#64748B",lineHeight:1.6,borderTop:"1px solid #334155",paddingTop:10}}>
+                    ✅ Redeemable: After the referred rider takes delivery of their vehicle and makes their <strong style={{color:"#94A3B8"}}>first weekly remittance</strong>.
+                  </div>
                 </div>
+
+                {/* Card 3 — LMA-to-LMA referral bonus */}
+                <div className="lma-earn">
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>🤝 LMA Recruitment Bonus</div>
+                  <div style={{fontSize:11,color:"#94A3B8",marginBottom:14,lineHeight:1.5}}>Earned when you successfully recruit another LMA onto RideTrust and they activate their jurisdiction.</div>
+                  <div className="earn-row"><span className="earn-lbl">Per LMA recruited</span><span className="earn-val">₦50,000</span></div>
+                  <div style={{marginTop:6,fontSize:11,color:"#94A3B8",lineHeight:1.6}}>No cap — earn for every LMA you bring on board who qualifies.</div>
+                  <div style={{marginTop:12,fontSize:11,color:"#64748B",lineHeight:1.6,borderTop:"1px solid #334155",paddingTop:10}}>
+                    ✅ Redeemable: After the recruited LMA has <strong style={{color:"#94A3B8"}}>3 riders delivered</strong> and each has made at least <strong style={{color:"#94A3B8"}}>4 weekly remittances</strong> — no ghost LMAs.
+                  </div>
+                </div>
+
+                {/* Card 4 — Quarterly zero-default bonus */}
+                <div className="lma-earn">
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>⭐ Zero-Default Bonus</div>
+                  <div style={{fontSize:11,color:"#94A3B8",marginBottom:14,lineHeight:1.5}}>Quarterly reward for LMAs with zero missed or partial remittances across their entire active rider portfolio.</div>
+                  <div className="earn-row"><span className="earn-lbl">Rate</span><span className="earn-val">2% of quarterly remittances</span></div>
+                  <div style={{marginTop:10,background:"#0F2027",borderRadius:6,padding:"10px 12px",fontSize:11,color:"#94A3B8",lineHeight:1.8}}>
+                    <strong style={{color:C.white}}>Example — 15-rider portfolio:</strong><br/>
+                    10 bikes × ₦25,000 × 13 weeks = ₦3,250,000<br/>
+                    5 kekes × ₦60,000 × 13 weeks = ₦3,900,000<br/>
+                    Total remittances = ₦7,150,000<br/>
+                    <strong style={{color:C.orange}}>2% bonus = ₦143,000 for the quarter</strong>
+                  </div>
+                  <div style={{marginTop:12,fontSize:11,color:"#64748B",lineHeight:1.6,borderTop:"1px solid #334155",paddingTop:10}}>
+                    ✅ Redeemable: End of each quarter — zero shortfalls, zero defaults, across all active riders for the full 13-week period.
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Combined T&Cs */}
+              <div style={{marginTop:20,background:"#1A1A2E",borderRadius:10,padding:"16px 20px",fontSize:12,color:"#94A3B8",lineHeight:1.8}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:C.white,marginBottom:12}}>📋 Bonus & Commission — Terms & Conditions</div>
+
+                <div style={{color:C.orange,fontWeight:700,marginBottom:4,fontSize:12}}>A. Weekly Commission (Remittance)</div>
+                1. Commission is earned only on remittances that are fully paid and confirmed by RoyalTech.<br/>
+                2. Shortfalls or partial payments do not earn commission for that week — only fully completed remittances qualify.<br/>
+                3. Commission is aggregated and paid <strong style={{color:C.white}}>monthly</strong>. No advances.<br/><br/>
+
+                <div style={{color:C.orange,fontWeight:700,marginBottom:4,fontSize:12}}>B. Rider / Driver Referral Bonus</div>
+                4. Bonus is paid <strong style={{color:C.white}}>only after</strong> the referred applicant takes delivery of their vehicle and completes their first weekly remittance.<br/>
+                5. If the referred applicant withdraws before delivery, the bonus is forfeited and reversed if already advanced.<br/>
+                6. The referring LMA automatically becomes a <strong style={{color:C.white}}>co-guarantor</strong> for the referred rider for the first 12 weeks of their HP term.<br/>
+                7. RoyalTech reserves the right to withhold or claw back the bonus if the referred rider defaults within the first 12 weeks.<br/>
+                8. The referred applicant must not already be registered under any other LMA on the platform at time of referral.<br/><br/>
+
+                <div style={{color:C.orange,fontWeight:700,marginBottom:4,fontSize:12}}>C. LMA Recruitment Bonus</div>
+                9. Bonus is paid only after the recruited LMA has been formally onboarded, signed the RoyalTech/Agent Agreement, and has <strong style={{color:C.white}}>at least 3 riders/drivers who have taken delivery</strong> in their jurisdiction, each having completed a minimum of <strong style={{color:C.white}}>4 weekly remittance payments</strong>.<br/>
+                10. The 3 qualifying riders must be in the recruited LMA's own jurisdiction — riders already registered under another LMA do not count.<br/>
+                11. If the recruited LMA exits or is deactivated before the threshold is reached, no bonus is paid.<br/>
+                12. All referrals (rider and LMA) must be registered through the official LMA portal. Verbal or informal referrals are not eligible.<br/><br/>
+
+                <div style={{color:C.orange,fontWeight:700,marginBottom:4,fontSize:12}}>D. Quarterly Zero-Default Bonus</div>
+                13. Bonus is calculated at <strong style={{color:C.white}}>2% of total confirmed remittances</strong> received by RoyalTech from the LMA's active rider portfolio over the 13-week quarter.<br/>
+                14. A single missed, partial, or reversed remittance from any rider in the LMA's portfolio in that quarter disqualifies the LMA from the zero-default bonus for that quarter.<br/>
+                15. The bonus is assessed and paid within 14 days of the quarter end. No partial credits are given — the standard is zero defaults, no exceptions.<br/>
+                16. An LMA on probation or under investigation for the quarter is automatically excluded from the zero-default bonus for that period.
               </div>
             </div>
           </div>
