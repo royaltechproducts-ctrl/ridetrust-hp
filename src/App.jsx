@@ -2085,13 +2085,18 @@ export default function App(){
                 {/* Card 1 — Weekly commission from remittances */}
                 <div className="lma-earn">
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>💰 Weekly Commission</div>
-                  <div style={{fontSize:11,color:"#94A3B8",marginBottom:14,lineHeight:1.5}}>Earned on every successful rider remittance you collect and confirm. Paid monthly by RoyalTech.</div>
-                  <div className="earn-row"><span className="earn-lbl">🏍️ Per bike / week</span><span className="earn-val">₦2,000</span></div>
-                  <div className="earn-row"><span className="earn-lbl">🛺 Per keke / week</span><span className="earn-val">₦4,000</span></div>
-                  <div className="earn-row"><span className="earn-lbl">🚐 Per minibus / week</span><span className="earn-val">₦6,000</span></div>
-                  <div className="earn-row"><span className="earn-lbl">🚌 Per full bus / week</span><span className="earn-val">₦8,000</span></div>
+                  <div style={{fontSize:11,color:"#94A3B8",marginBottom:14,lineHeight:1.5}}>Earned as a percentage of whatever the rider remits each week. Rate depends on how complete the remittance is.</div>
+                  <div className="earn-row"><span className="earn-lbl">✅ Full remittance (100%)</span><span className="earn-val" style={{color:"#4ADE80"}}>10% of amount paid</span></div>
+                  <div className="earn-row"><span className="earn-lbl">⚠️ Shortfall (50%–99%)</span><span className="earn-val" style={{color:"#FCD34D"}}>5% of amount paid</span></div>
+                  <div className="earn-row"><span className="earn-lbl">❌ Below 50% of target</span><span className="earn-val" style={{color:"#F87171"}}>0% — no commission</span></div>
+                  <div style={{marginTop:10,background:"#0F2027",borderRadius:6,padding:"10px 12px",fontSize:11,color:"#94A3B8",lineHeight:1.8}}>
+                    <strong style={{color:C.white}}>Example — Keke rider (₦60,000/week target):</strong><br/>
+                    Pays ₦60,000 → LMA earns <strong style={{color:"#4ADE80"}}>₦6,000</strong><br/>
+                    Pays ₦35,000 → LMA earns <strong style={{color:"#FCD34D"}}>₦1,750</strong><br/>
+                    Pays ₦28,000 → LMA earns <strong style={{color:"#F87171"}}>₦0</strong>
+                  </div>
                   <div style={{marginTop:12,fontSize:11,color:"#64748B",lineHeight:1.6,borderTop:"1px solid #334155",paddingTop:10}}>
-                    ✅ Redeemable: After rider submits remittance proof and payment is confirmed by RoyalTech.
+                    ✅ Aggregated and paid <strong style={{color:"#94A3B8"}}>monthly</strong> by RoyalTech. No advances.
                   </div>
                 </div>
 
@@ -2143,9 +2148,13 @@ export default function App(){
                 <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:C.white,marginBottom:12}}>📋 Bonus & Commission — Terms & Conditions</div>
 
                 <div style={{color:C.orange,fontWeight:700,marginBottom:4,fontSize:12}}>A. Weekly Commission (Remittance)</div>
-                1. Commission is earned only on remittances that are fully paid and confirmed by RoyalTech.<br/>
-                2. Shortfalls or partial payments do not earn commission for that week — only fully completed remittances qualify.<br/>
-                3. Commission is aggregated and paid <strong style={{color:C.white}}>monthly</strong>. No advances.<br/><br/>
+                1. Commission is calculated as a percentage of the amount actually remitted by the rider each week, on a three-tier scale:<br/>
+                &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Full remittance (100% of weekly target)</strong> → LMA earns <strong style={{color:"#4ADE80"}}>10%</strong> of the amount paid.<br/>
+                &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Shortfall (50% to 99% of weekly target)</strong> → LMA earns <strong style={{color:"#FCD34D"}}>5%</strong> of the amount paid.<br/>
+                &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Below 50% of weekly target</strong> → LMA earns <strong style={{color:"#F87171"}}>0%</strong> — no commission for that week.<br/>
+                2. The percentage is applied to what the rider actually paid, not the weekly target amount.<br/>
+                3. Commission is confirmed only after RoyalTech verifies and accepts the remittance.<br/>
+                4. Commission is aggregated and paid <strong style={{color:C.white}}>monthly</strong>. No advances.<br/><br/>
 
                 <div style={{color:C.orange,fontWeight:700,marginBottom:4,fontSize:12}}>B. Rider / Driver Referral Bonus</div>
                 4. Bonus is paid <strong style={{color:C.white}}>only after</strong> the referred applicant takes delivery of their vehicle and completes their first weekly remittance.<br/>
