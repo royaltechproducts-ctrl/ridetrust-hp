@@ -334,6 +334,15 @@ export default function App(){
     full:  {weekly:90000, inv:70000, lma:9000,  rt:6600, reserve:4400},
   };
 
+  // Deposit split — triggered once a rider's deposit bucket hits 100% of target
+  // Buckets: D/R-D/B (Rider Discount / LMA Bonus) | RT-RPIT (Reg, Plate, Insurance, Tracker) | RT-PO (Overhead/Profit) | CR-IR (Contingency Reserve — Incentives & Rewards)
+  const DEPOSIT_SPLIT = {
+    bike: {target:400000,  drdb:100000, rpit:100000, rtpo:175000, crir:25000},
+    keke: {target:600000,  drdb:200000, rpit:150000, rtpo:200000, crir:50000},
+    mini: {target:800000,  drdb:250000, rpit:200000, rtpo:275000, crir:75000},
+    full: {target:1000000, drdb:300000, rpit:250000, rtpo:350000, crir:100000},
+  };
+
   // Record a remittance and split into buckets
   const recordRemittance = async () => {
     const rider = riders.find(r=>r.id===remitForm.rider_id);
@@ -1400,6 +1409,181 @@ export default function App(){
                     </div>
                   </div>
                 ))}
+
+                {/* ═══════════════════════════════════════════════════
+                    DEPOSIT SPLIT SECTION
+                    Holding bucket per rider → auto-split at 100%
+                ═══════════════════════════════════════════════════ */}
+                <div style={{marginTop:40,paddingTop:32,borderTop:"2px solid "+C.lightgr}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,textTransform:"uppercase",marginBottom:4,color:C.black}}>
+                    💰 Initial Deposit Buckets
+                  </div>
+                  <div style={{fontSize:13,color:C.grey,marginBottom:24,lineHeight:1.7}}>
+                    Each rider's deposit is held in a single per-rider holding bucket. Once the full deposit target is reached, the holding bucket auto-splits into four purpose buckets below.
+                  </div>
+
+                  {/* Deposit split formula table */}
+                  <div style={{background:C.black,borderRadius:12,padding:20,marginBottom:28,overflowX:"auto"}}>
+                    <div style={{fontWeight:700,fontSize:13,color:C.orange,letterSpacing:1,marginBottom:12,textTransform:"uppercase"}}>💰 Deposit Split Formula (on 100% completion)</div>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,color:C.white,minWidth:560}}>
+                      <thead>
+                        <tr style={{borderBottom:"1px solid rgba(255,255,255,.2)"}}>
+                          {["Category","Deposit Target","D/R–D/B","RT Inv. RPIT","RT P/O","CR–IR"].map(h=>(
+                            <th key={h} style={{textAlign:"left",padding:"6px 10px",opacity:.6,fontWeight:600,letterSpacing:.5}}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          {icon:"🏍️",name:"Bike",    vt:"bike"},
+                          {icon:"🛺",name:"Keke",    vt:"keke"},
+                          {icon:"🚗",name:"Mini",    vt:"mini"},
+                          {icon:"🚌",name:"Full Bus",vt:"full"},
+                        ].map(row=>{
+                          const ds=DEPOSIT_SPLIT[row.vt];
+                          const pcts=[ds.drdb/ds.target*100,ds.rpit/ds.target*100,ds.rtpo/ds.target*100,ds.crir/ds.target*100];
+                          return(
+                            <tr key={row.vt} style={{borderBottom:"1px solid rgba(255,255,255,.08)"}}>
+                              <td style={{padding:"9px 10px",fontWeight:700}}>{row.icon} {row.name}</td>
+                              <td style={{padding:"9px 10px",color:C.orange,fontWeight:700}}>₦{ds.target.toLocaleString()}</td>
+                              <td style={{padding:"9px 10px"}}><span style={{fontWeight:700}}>₦{ds.drdb.toLocaleString()}</span><span style={{opacity:.5,marginLeft:4}}>({pcts[0].toFixed(1)}%)</span></td>
+                              <td style={{padding:"9px 10px"}}><span style={{fontWeight:700}}>₦{ds.rpit.toLocaleString()}</span><span style={{opacity:.5,marginLeft:4}}>({pcts[1].toFixed(1)}%)</span></td>
+                              <td style={{padding:"9px 10px"}}><span style={{fontWeight:700}}>₦{ds.rtpo.toLocaleString()}</span><span style={{opacity:.5,marginLeft:4}}>({pcts[2].toFixed(1)}%)</span></td>
+                              <td style={{padding:"9px 10px"}}><span style={{fontWeight:700}}>₦{ds.crir.toLocaleString()}</span><span style={{opacity:.5,marginLeft:4}}>({pcts[3].toFixed(1)}%)</span></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    <div style={{fontSize:10,color:"rgba(255,255,255,.4)",marginTop:10,lineHeight:1.7}}>
+                      <strong style={{color:"rgba(255,255,255,.6)"}}>D/R–D/B:</strong> Rider Discount / LMA Bonus fund &nbsp;|&nbsp;
+                      <strong style={{color:"rgba(255,255,255,.6)"}}>RT Inv. RPIT:</strong> RoyalTech Co-Investment — Registration, Plate, Insurance & Tracker &nbsp;|&nbsp;
+                      <strong style={{color:"rgba(255,255,255,.6)"}}>RT P/O:</strong> RoyalTech Overhead / Profit &nbsp;|&nbsp;
+                      <strong style={{color:"rgba(255,255,255,.6)"}}>CR–IR:</strong> Contingency Reserve — Incentives & Rewards
+                    </div>
+                  </div>
+
+                  {/* Per-rider deposit holding buckets */}
+                  <div style={{fontWeight:700,fontSize:14,marginBottom:14,color:C.black}}>🔒 Per-Rider Deposit Holding Buckets</div>
+                  <div style={{fontSize:12,color:C.grey,marginBottom:16,lineHeight:1.6}}>
+                    Showing all riders with deposit on record. A bucket marked <strong>✅ SPLIT READY</strong> has hit 100% — tap to trigger the split into the four destination buckets.
+                  </div>
+                  {riders.filter(r=>r.deposit_paid>0||r.status==="committed").length===0
+                    ? <div style={{color:C.grey,fontSize:13,fontStyle:"italic"}}>No deposit records yet. Deposits appear here once a rider's first payment is logged.</div>
+                    : riders.filter(r=>r.status==="committed"||r.status==="active"||r.deposit_paid>0).map(r=>{
+                        const ds = DEPOSIT_SPLIT[r.vehicle_type]||DEPOSIT_SPLIT.keke;
+                        const held = r.deposit_paid||0;
+                        const pct  = Math.min(100, Math.round(held/ds.target*100));
+                        const full = held>=ds.target;
+                        const vtLabel = {bike:"Dispatch Bike 🏍️",keke:"Keke Tricycle 🛺",mini:"Mini (Korope) 🚗",full:"Full Bus/Cab 🚌"}[r.vehicle_type]||r.vehicle_type;
+                        return(
+                          <div key={r.id} style={{background:C.white,borderRadius:10,padding:18,marginBottom:12,border:"2px solid "+(full?"#16A34A":C.lightgr)}}>
+                            <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:10}}>
+                              <div>
+                                <div style={{fontWeight:800,fontSize:14,color:C.black}}>{r.full_name}</div>
+                                <div style={{fontSize:12,color:C.grey}}>{vtLabel} · {r.lga||"—"}</div>
+                              </div>
+                              <div style={{textAlign:"right"}}>
+                                <div style={{fontWeight:900,fontSize:18,color:full?"#16A34A":C.orange}}>₦{held.toLocaleString()} <span style={{fontSize:12,fontWeight:600,color:C.grey}}>/ ₦{ds.target.toLocaleString()}</span></div>
+                                {full
+                                  ? <span style={{fontSize:11,fontWeight:700,background:"#DCFCE7",color:"#166534",padding:"2px 10px",borderRadius:10}}>✅ SPLIT READY</span>
+                                  : <span style={{fontSize:11,fontWeight:700,background:"#FEF3C7",color:"#92400E",padding:"2px 10px",borderRadius:10}}>⏳ {pct}% collected</span>
+                                }
+                              </div>
+                            </div>
+                            {/* Progress bar */}
+                            <div style={{background:C.lightgr,borderRadius:4,height:8,marginBottom:full?14:0,overflow:"hidden"}}>
+                              <div style={{width:pct+"%",height:"100%",background:full?"#16A34A":C.orange,borderRadius:4,transition:"width .4s"}}/>
+                            </div>
+                            {/* Split preview — only shown when full */}
+                            {full&&(
+                              <div style={{marginTop:12}}>
+                                <div style={{fontSize:11,fontWeight:700,color:C.grey,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Split breakdown on trigger:</div>
+                                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8,marginBottom:12}}>
+                                  {[
+                                    {label:"D/R–D/B",desc:"Rider Discount / LMA Bonus",    val:ds.drdb, color:"#7C3AED"},
+                                    {label:"RT Inv. RPIT",desc:"Reg · Plate · Ins · Tracker",val:ds.rpit, color:C.blue},
+                                    {label:"RT P/O",desc:"RoyalTech Overhead / Profit",       val:ds.rtpo, color:C.orange},
+                                    {label:"CR–IR",desc:"Contingency Reserve — Incentives",   val:ds.crir, color:"#888"},
+                                  ].map(b=>(
+                                    <div key={b.label} style={{background:C.offwhite,borderRadius:8,padding:"10px 12px",border:"1.5px solid "+C.lightgr}}>
+                                      <div style={{fontWeight:900,fontSize:15,color:b.color}}>₦{b.val.toLocaleString()}</div>
+                                      <div style={{fontSize:10,fontWeight:700,color:C.black,marginTop:2}}>{b.label}</div>
+                                      <div style={{fontSize:9,color:C.grey,marginTop:1,lineHeight:1.4}}>{b.desc}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                                <button
+                                  style={{background:"#16A34A",color:C.white,padding:"10px 24px",borderRadius:6,fontWeight:700,fontSize:13,cursor:"pointer",border:"none"}}
+                                  onClick={async()=>{
+                                    if(!window.confirm(`Trigger deposit split for ${r.full_name}? This will move ₦${ds.target.toLocaleString()} from holding into the 4 destination buckets and cannot be undone.`)) return;
+                                    const ds2=DEPOSIT_SPLIT[r.vehicle_type]||DEPOSIT_SPLIT.keke;
+                                    const vt=r.vehicle_type;
+                                    const splits=[
+                                      {name:"dep_drdb_"+vt, add:ds2.drdb},
+                                      {name:"dep_rpit_"+vt, add:ds2.rpit},
+                                      {name:"dep_rtpo_"+vt, add:ds2.rtpo},
+                                      {name:"dep_crir_"+vt, add:ds2.crir},
+                                    ];
+                                    for(const b of splits){
+                                      const cur=buckets[b.name];
+                                      if(cur){ await sb.from("rt_buckets").update({balance:(cur.balance||0)+b.add,total_received:(cur.total_received||0)+b.add,updated_at:new Date().toISOString()}).eq("bucket_name",b.name); }
+                                    }
+                                    // Mark deposit as split on the rider record
+                                    await sb.from("rt_riders").update({deposit_split_done:true}).eq("id",r.id);
+                                    await loadData();
+                                    showToast(`✅ Deposit split triggered for ${r.full_name} — 4 buckets updated.`);
+                                  }}
+                                >
+                                  ⚡ Trigger Deposit Split
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                  }
+
+                  {/* Deposit destination bucket totals — all 4 vehicle types */}
+                  <div style={{fontWeight:700,fontSize:14,marginBottom:14,marginTop:32,color:C.black}}>📦 Deposit Destination Buckets (Post-Split Totals)</div>
+                  {[
+                    {vt:"bike", icon:"🏍️", label:"Bike (2-Wheel)"},
+                    {vt:"keke", icon:"🛺",  label:"Keke / Tricycle (3-Wheel)"},
+                    {vt:"mini", icon:"🚗",  label:"Four Wheels Mini (Korope)"},
+                    {vt:"full", icon:"🚌",  label:"Four Wheels Full (Hiace / Cab)"},
+                  ].map(({vt,icon,label})=>{
+                    const ds=DEPOSIT_SPLIT[vt];
+                    const pcts=[ds.drdb/ds.target*100,ds.rpit/ds.target*100,ds.rtpo/ds.target*100,ds.crir/ds.target*100];
+                    const colors=["#7C3AED",C.blue,C.orange,"#888"];
+                    return(
+                      <div key={vt} style={{marginBottom:24}}>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:17,textTransform:"uppercase",marginBottom:8,color:C.black}}>{icon} {label}</div>
+                        <div style={{display:"flex",height:6,borderRadius:4,overflow:"hidden",marginBottom:10}}>
+                          {pcts.map((p,i)=><div key={i} style={{width:p+"%",background:colors[i]}}/>)}
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(175px,1fr))",gap:12}}>
+                          {[
+                            {key:"dep_drdb_"+vt, label:"D/R–D/B",        desc:"Rider Discount / LMA Bonus",          color:"#7C3AED"},
+                            {key:"dep_rpit_"+vt, label:"RT Inv. RPIT",   desc:"Reg · Plate · Insurance · Tracker",   color:C.blue},
+                            {key:"dep_rtpo_"+vt, label:"RT P/O",         desc:"RoyalTech Overhead / Profit",          color:C.orange},
+                            {key:"dep_crir_"+vt, label:"CR–IR",          desc:"Contingency Reserve — Incentives",     color:"#888"},
+                          ].map(b=>{
+                            const data=buckets[b.key]||{balance:0,total_received:0};
+                            return(
+                              <div key={b.key} style={{background:C.white,borderRadius:10,padding:16,border:"1.5px solid "+C.lightgr}}>
+                                <div style={{fontSize:10,fontWeight:700,color:b.color,textTransform:"uppercase",letterSpacing:1,marginBottom:2}}>{b.label}</div>
+                                <div style={{fontSize:9,color:C.grey,marginBottom:8,lineHeight:1.4}}>{b.desc}</div>
+                                <div style={{fontWeight:900,fontSize:20,color:C.black,marginBottom:4}}>₦{(data.balance||0).toLocaleString()}</div>
+                                <div style={{fontSize:11,color:C.grey}}>Total: ₦{(data.total_received||0).toLocaleString()}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
               </div>
             )}
 
