@@ -1913,13 +1913,13 @@ export default function App(){
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,textTransform:"uppercase"}}>Korope Minibus</div>
                   </div>
                   <div className="inv-body">
-                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦7,000,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦6,924,000</span></div>
                     <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">156 weeks</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦55,000 / week</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit" style={{color:"#6366F1"}}>₦8,580,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit" style={{color:"#6366F1"}}>₦1,580,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦54,000 / week</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit" style={{color:"#6366F1"}}>₦8,424,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit" style={{color:"#6366F1"}}>₦1,500,000</span></div>
                     <div style={{background:"#EEF2FF",border:"1.5px solid #C7D2FE",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#3730A3",lineHeight:1.7}}>
-                      ₦55,000 × 156 weeks pooled monthly to your account. Managed end-to-end by RoyalTech.
+                      ₦54,000 × 156 weeks pooled monthly to your account. Managed end-to-end by RoyalTech.
                     </div>
                     <button className="btn btn-full" style={{background:"#4338CA",color:C.white,marginTop:14}} onClick={()=>setModal("invest-mini")}>Invest — Four Wheels Mini</button>
                   </div>
@@ -1933,11 +1933,11 @@ export default function App(){
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,textTransform:"uppercase"}}>Hiace Bus / Cab Ride</div>
                   </div>
                   <div className="inv-body">
-                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦9,000,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦8,920,000</span></div>
                     <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">156 weeks</span></div>
                     <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦70,000 / week</span></div>
                     <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit" style={{color:"#DC2626"}}>₦10,920,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit" style={{color:"#DC2626"}}>₦1,920,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit" style={{color:"#DC2626"}}>₦2,000,000</span></div>
                     <div style={{background:"#FEF2F2",border:"1.5px solid #FECACA",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#991B1B",lineHeight:1.7}}>
                       ₦70,000 × 156 weeks pooled monthly to your account. Managed end-to-end by RoyalTech.
                     </div>
@@ -2217,13 +2217,13 @@ export default function App(){
             {modal==="invest-bike"&&(
               <>
                 <div className="modal-h cd">🏍️ Two Wheels Investment</div>
-                <div className="modal-s">Invest ₦1,350,000 · Receive ₦1,638,000 over 78 weeks · Net profit ₦288,000<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Invest ₦1,260,000 · Receive ₦1,560,000 over 78 weeks · Net profit ₦300,000<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
                 <div className="field"><label>How many units?</label>
                   <select onChange={e=>setF("units",e.target.value)}>
-                    <option value="">Select number of units</option>{[1,2,3,4,5,6,7,8,9,10].map(n=><option key={n}>{n} unit{n>1?"s":""} — ₦{(n*1350000).toLocaleString()}</option>)}
+                    <option value="">Select number of units</option>{[1,2,3,4,5,6,7,8,9,10].map(n=><option key={n}>{n} unit{n>1?"s":""} — ₦{(n*1260000).toLocaleString()}</option>)}
                   </select>
                 </div>
                 <div className="field">
@@ -2242,13 +2242,13 @@ export default function App(){
             {modal==="invest-keke"&&(
               <>
                 <div className="modal-h cd">🛺 Three Wheels Investment</div>
-                <div className="modal-s">Invest ₦4,120,000 · Receive ₦5,200,000 over 104 weeks · Net profit ₦1,080,000<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Invest ₦4,200,000 · Receive ₦5,200,000 over 104 weeks · Net profit ₦1,000,000<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
                 <div className="field"><label>How many units?</label>
                   <select onChange={e=>setF("units",e.target.value)}>
-                    <option value="">Select number of units</option>{[1,2,3,4,5,6,7,8,9,10].map(n=><option key={n}>{n} unit{n>1?"s":""} — ₦{(n*4120000).toLocaleString()}</option>)}
+                    <option value="">Select number of units</option>{[1,2,3,4,5,6,7,8,9,10].map(n=><option key={n}>{n} unit{n>1?"s":""} — ₦{(n*4200000).toLocaleString()}</option>)}
                   </select>
                 </div>
                 <div className="field">
@@ -2267,13 +2267,13 @@ export default function App(){
             {modal==="invest-mini"&&(
               <>
                 <div className="modal-h cd">🚗 Four Wheels Mini Investment</div>
-                <div className="modal-s">Invest ₦7,000,000 · Receive ₦8,580,000 over 156 weeks · Net profit ₦1,580,000<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Invest ₦6,924,000 · Receive ₦8,424,000 over 156 weeks · Net profit ₦1,500,000<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
                 <div className="field"><label>How many units?</label>
                   <select onChange={e=>setF("units",e.target.value)}>
-                    <option value="">Select number of units</option>{[1,2,3,4,5].map(n=><option key={n}>{n} unit{n>1?"s":""} — ₦{(n*7000000).toLocaleString()}</option>)}
+                    <option value="">Select number of units</option>{[1,2,3,4,5].map(n=><option key={n}>{n} unit{n>1?"s":""} — ₦{(n*6924000).toLocaleString()}</option>)}
                   </select>
                 </div>
                 <div className="field">
@@ -2292,13 +2292,13 @@ export default function App(){
             {modal==="invest-full"&&(
               <>
                 <div className="modal-h cd">🚌 Four Wheels Full Investment</div>
-                <div className="modal-s">Invest ₦9,000,000 · Receive ₦10,920,000 over 156 weeks · Net profit ₦1,920,000<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Invest ₦8,920,000 · Receive ₦10,920,000 over 156 weeks · Net profit ₦2,000,000<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
                 <div className="field"><label>How many units?</label>
                   <select onChange={e=>setF("units",e.target.value)}>
-                    <option value="">Select number of units</option>{[1,2,3,4,5].map(n=><option key={n}>{n} unit{n>1?"s":""} — ₦{(n*9000000).toLocaleString()}</option>)}
+                    <option value="">Select number of units</option>{[1,2,3,4,5].map(n=><option key={n}>{n} unit{n>1?"s":""} — ₦{(n*8920000).toLocaleString()}</option>)}
                   </select>
                 </div>
                 <div className="field">
