@@ -1822,6 +1822,7 @@ export default function App(){
                     <div className="v-desc">Brand new Bajaj, TVS or Qlink 200cc. Insurance and plate registration included.</div>
                   </div>
                   <div className="v-body">
+                    <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val" style={{color:C.grey}}>₦1,300,000</span></div>
                     <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦1,750,000</span></div>
                     <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">Inclusive</span></div>
                     <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val hi">₦400,000</span></div>
@@ -1850,6 +1851,7 @@ export default function App(){
                     <div className="v-desc">Brand new Bajaj RE, TVS King or Piaggio. Insurance and plate registration included.</div>
                   </div>
                   <div className="v-body">
+                    <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val" style={{color:C.grey}}>₦4,100,000</span></div>
                     <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦6,800,000</span></div>
                     <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">Inclusive</span></div>
                     <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val" style={{color:C.green,fontSize:16}}>₦600,000</span></div>
@@ -1878,6 +1880,7 @@ export default function App(){
                     <div className="v-desc">Clean tokunbo minibus (Korope). Insurance and plate registration included.</div>
                   </div>
                   <div className="v-body">
+                    <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val" style={{color:C.grey}}>₦7,000,000</span></div>
                     <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦11,720,000</span></div>
                     <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">Inclusive</span></div>
                     <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val hi" style={{color:"#6366F1"}}>₦800,000</span></div>
@@ -1906,6 +1909,7 @@ export default function App(){
                     <div className="v-desc">Full-size Hiace bus or cab ride vehicle. Insurance and plate registration included.</div>
                   </div>
                   <div className="v-body">
+                    <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val" style={{color:C.grey}}>₦9,000,000</span></div>
                     <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦15,040,000</span></div>
                     <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">Inclusive</span></div>
                     <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val hi" style={{color:"#DC2626"}}>₦1,000,000</span></div>
