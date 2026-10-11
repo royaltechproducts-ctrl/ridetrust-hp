@@ -319,14 +319,14 @@ export default function App(){
   };
 
   // Fund split formulas by vehicle type
-  // bike:  ₦25,000/wk → inv ₦21,000 | LMA ₦2,500 | RT ₦1,200 | reserve ₦300  (no-LMA: RT gets ₦3,700)
+  // bike:  ₦25,000/wk → inv ₦20,000 | LMA ₦2,500 | RT ₦1,200 | reserve ₦1,300 (no-LMA: RT gets ₦3,700)
   // keke:  ₦60,000/wk → inv ₦50,000 | LMA ₦5,000 | RT ₦3,000 | reserve ₦2,000 (no-LMA: RT gets ₦8,000)
-  // mini:  ₦70,000/wk → inv ₦55,000 | LMA ₦7,000 | RT ₦5,000 | reserve ₦3,000 (no-LMA: RT gets ₦12,000)
+  // mini:  ₦70,000/wk → inv ₦54,000 | LMA ₦7,000 | RT ₦5,000 | reserve ₦4,000 (no-LMA: RT gets ₦12,000)
   // full:  ₦90,000/wk → inv ₦70,000 | LMA ₦9,000 | RT ₦7,000 | reserve ₦4,000 (no-LMA: RT gets ₦16,000)
   const SPLIT = {
-    bike:  {weekly:25000, inv:21000, lma:2500,  rt:1200, reserve:300},
+    bike:  {weekly:25000, inv:20000, lma:2500,  rt:1200, reserve:1300},
     keke:  {weekly:60000, inv:50000, lma:5000,  rt:3000, reserve:2000},
-    mini:  {weekly:70000, inv:55000, lma:7000,  rt:5000, reserve:3000},
+    mini:  {weekly:70000, inv:54000, lma:7000,  rt:5000, reserve:4000},
     full:  {weekly:90000, inv:70000, lma:9000,  rt:7000, reserve:4000},
   };
 
@@ -1873,13 +1873,13 @@ export default function App(){
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,textTransform:"uppercase"}}>Dispatch Bike</div>
                   </div>
                   <div className="inv-body">
-                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦1,350,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦1,260,000</span></div>
                     <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">78 weeks</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦21,000 / week</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit">₦1,638,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit">₦288,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦20,000 / week</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit">₦1,560,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit">₦300,000</span></div>
                     <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#1E40AF",lineHeight:1.7}}>
-                      ₦21,000 × 78 weeks pooled monthly to your account. Zero operations on your end.
+                      ₦20,000 × 78 weeks pooled monthly to your account. Zero operations on your end.
                     </div>
                     <button className="btn btn-full" style={{background:C.blue,color:C.white,marginTop:14}} onClick={()=>setModal("invest-bike")}>Invest — Two Wheels</button>
                   </div>
@@ -1893,11 +1893,11 @@ export default function App(){
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,textTransform:"uppercase"}}>Keke Tricycle</div>
                   </div>
                   <div className="inv-body">
-                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦4,120,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦4,200,000</span></div>
                     <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">104 weeks</span></div>
                     <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦50,000 / week</span></div>
                     <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit" style={{color:C.green}}>₦5,200,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit" style={{color:C.green}}>₦1,080,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit" style={{color:C.green}}>₦1,000,000</span></div>
                     <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#166534",lineHeight:1.7}}>
                       ₦50,000 × 104 weeks pooled monthly to your account. Zero operations on your end.
                     </div>
