@@ -318,16 +318,20 @@ export default function App(){
     setLoading(false);
   };
 
-  // Fund split formulas by vehicle type
+  // Fund split formula (Rule 1: Investor fixed priority, Rule 2: LMA=10% of gross, Rule 3: remainder 60% RT / 40% reserve)
+  // bike:  gross ₦25k → inv ₦20k | lma 10%=₦2,500 | remainder ₦2,500 → rt 60%=₦1,500 | reserve 40%=₦1,000
+  // keke:  gross ₦60k → inv ₦50k | lma 10%=₦6,000 | remainder ₦4,000 → rt 60%=₦2,400 | reserve 40%=₦1,600
+  // mini:  gross ₦70k → inv ₦54k | lma 10%=₦7,000 | remainder ₦9,000 → rt 60%=₦5,400 | reserve 40%=₦3,600
+  // full:  gross ₦90k → inv ₦70k | lma 10%=₦9,000 | remainder ₦11,000→ rt 60%=₦6,600 | reserve 40%=₦4,400
   // bike:  ₦25,000/wk → inv ₦20,000 | LMA ₦2,500 | RT ₦1,200 | reserve ₦1,300 (no-LMA: RT gets ₦3,700)
   // keke:  ₦60,000/wk → inv ₦50,000 | LMA ₦5,000 | RT ₦3,000 | reserve ₦2,000 (no-LMA: RT gets ₦8,000)
   // mini:  ₦70,000/wk → inv ₦54,000 | LMA ₦7,000 | RT ₦5,000 | reserve ₦4,000 (no-LMA: RT gets ₦12,000)
   // full:  ₦90,000/wk → inv ₦70,000 | LMA ₦9,000 | RT ₦7,000 | reserve ₦4,000 (no-LMA: RT gets ₦16,000)
   const SPLIT = {
-    bike:  {weekly:25000, inv:20000, lma:2500,  rt:1200, reserve:1300},
-    keke:  {weekly:60000, inv:50000, lma:5000,  rt:3000, reserve:2000},
-    mini:  {weekly:70000, inv:54000, lma:7000,  rt:5000, reserve:4000},
-    full:  {weekly:90000, inv:70000, lma:9000,  rt:7000, reserve:4000},
+    bike:  {weekly:25000, inv:20000, lma:2500,  rt:1500, reserve:1000},
+    keke:  {weekly:60000, inv:50000, lma:6000,  rt:2400, reserve:1600},
+    mini:  {weekly:70000, inv:54000, lma:7000,  rt:5400, reserve:3600},
+    full:  {weekly:90000, inv:70000, lma:9000,  rt:6600, reserve:4400},
   };
 
   // Record a remittance and split into buckets
@@ -337,19 +341,35 @@ export default function App(){
     const amt = Number(remitForm.amount);
     const vt  = rider.vehicle_type;
     const hasLma = remitForm.has_lma;
-    // Split calculation
+    // Split calculation — 3-rule formula
+    // Rule 1: Investor gets fixed share (highest priority; shortfall absorbed by reserve)
+    // Rule 2: LMA gets 10% of gross weekly remittance
+    // Rule 3: Remainder split 60% RoyalTech / 40% Reserve
     const sp = SPLIT[vt] || SPLIT.keke;
-    let inv     = sp.inv;
-    let agent   = hasLma ? sp.lma : 0;
-    let rt      = hasLma ? sp.rt : sp.rt + sp.lma;
-    let reserve = sp.reserve;
-    const expected = inv+agent+rt+reserve;
-    // Scale if underpaid
-    const scale = amt < expected ? amt/expected : 1;
-    const invAmt     = Math.floor(inv*scale);
-    const agentAmt   = Math.floor(agent*scale);
-    const rtAmt      = Math.floor(rt*scale);
-    const reserveAmt = amt - invAmt - agentAmt - rtAmt;
+    const expected = sp.weekly;
+    if(amt < sp.inv){
+      // Severe shortfall: investor gets everything, others get 0
+      const invAmt=amt, agentAmt=0, rtAmt=0, reserveAmt=0;
+      await sb.from("rt_remittances").insert({
+        rider_id: remitForm.rider_id, vehicle_type: vt,
+        week_number: Number(remitForm.week_number)||null,
+        amount_received: amt, investor_share: invAmt, agent_share: agentAmt,
+        royaltech_share: rtAmt, reserve_share: reserveAmt,
+        has_lma: hasLma, status:"short", notes: remitForm.notes||null,
+      });
+      const bUpdates=[{name:"investor_"+vt,add:invAmt}];
+      for(const b of bUpdates){ const cur=buckets[b.name]; if(cur){ await sb.from("rt_buckets").update({balance:(cur.balance||0)+b.add,total_received:(cur.total_received||0)+b.add,updated_at:new Date().toISOString()}).eq("bucket_name",b.name); } }
+      setRemitForm({rider_id:"",amount:"",week_number:"",has_lma:true,notes:""});
+      await loadData();
+      showToast("⚠️ Severe shortfall — investor bucket only, others zeroed.");
+      return;
+    }
+    // Normal / partial split
+    const invAmt   = sp.inv;                                     // Rule 1: fixed investor amount
+    const agentAmt = hasLma ? Math.round(amt * 0.10) : 0;       // Rule 2: 10% of gross to LMA
+    const remainder = amt - invAmt - agentAmt;
+    const rtAmt      = Math.round(remainder * 0.60);             // Rule 3: 60% of remainder
+    const reserveAmt = remainder - rtAmt;                        // Rule 3: 40% of remainder (exact)
     // Insert remittance record
     await sb.from("rt_remittances").insert({
       rider_id: remitForm.rider_id,
@@ -361,7 +381,7 @@ export default function App(){
       royaltech_share: rtAmt,
       reserve_share: reserveAmt,
       has_lma: hasLma,
-      status: amt >= expected ? "full" : "short",
+      status: amt >= sp.weekly ? "full" : "short",
       notes: remitForm.notes||null,
     });
     // Update bucket balances
@@ -383,7 +403,7 @@ export default function App(){
     }
     setRemitForm({rider_id:"",amount:"",week_number:"",has_lma:true,notes:""});
     await loadData();
-    showToast(amt>=expected?"Remittance recorded. All buckets updated.":"⚠️ Short remittance recorded. Buckets scaled proportionally.");
+    showToast(amt>=sp.weekly?"Remittance recorded. All buckets updated.":"⚠️ Short remittance recorded. Contingency reserve absorbs investor shortfall next disbursement.");
   };
 
   useEffect(()=>{ if(adminOn) loadData(); },[adminOn]);
@@ -1225,14 +1245,17 @@ export default function App(){
                     const amt = Number(remitForm.amount);
                     const hasLma = remitForm.has_lma;
                     const sp2 = SPLIT[vt]||SPLIT.keke;
-                    let inv=sp2.inv, agent=hasLma?sp2.lma:0, rt=hasLma?sp2.rt:sp2.rt+sp2.lma, reserve=sp2.reserve;
-                    const expected=inv+agent+rt+reserve;
-                    const scale=amt<expected?amt/expected:1;
-                    const invA=Math.floor(inv*scale), agentA=Math.floor(agent*scale), rtA=Math.floor(rt*scale), resA=amt-Math.floor(inv*scale)-Math.floor(agent*scale)-Math.floor(rt*scale);
+                    // Rule 1: investor fixed | Rule 2: LMA 10% gross | Rule 3: remainder 60/40
+                    const invA    = Math.min(amt, sp2.inv);
+                    const agentA  = hasLma ? Math.round(amt * 0.10) : 0;
+                    const rem2    = Math.max(0, amt - invA - agentA);
+                    const rtA     = Math.round(rem2 * 0.60);
+                    const resA    = rem2 - rtA;
+                    const expected = sp2.weekly;
                     return(
                       <div style={{background:amt<expected?"#FEF3C7":"#F0FFF4",border:"1.5px solid "+(amt<expected?"#FCD34D":"#BBF7D0"),borderRadius:8,padding:14,marginBottom:12}}>
                         <div style={{fontWeight:700,fontSize:12,marginBottom:8,color:amt<expected?"#92400E":"#166534"}}>
-                          {amt<expected?"⚠️ SHORT PAYMENT — splits scaled proportionally":"✅ Full payment — standard split"}
+                          {amt<expected?"⚠️ SHORT PAYMENT — investor share protected; reserve covers gap at disbursement":"✅ Full payment — standard 3-rule split"}
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,fontSize:12}}>
                           {[["Investor",invA,C.blue],["Agent",agentA,C.green],["RoyalTech",rtA,C.orange],["Reserve",resA,"#888"]].map(([l,v,c])=>(
@@ -1290,17 +1313,17 @@ export default function App(){
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,color:C.white,minWidth:520}}>
                     <thead>
                       <tr style={{borderBottom:"1px solid rgba(255,255,255,.2)"}}>
-                        {["Vehicle","Weekly In","Investor Pool","LMA (10%)","RoyalTech","Reserve"].map(h=>(
+                        {["Vehicle","Weekly In","Investor Pool","LMA (10% gross)","RoyalTech (60% rem.)","Reserve (40% rem.)"].map(h=>(
                           <th key={h} style={{textAlign:"left",padding:"6px 10px",opacity:.6,fontWeight:600,letterSpacing:.5}}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {[
-                        {icon:"🏍️",name:"Bike",    vt:"bike", pct:[84.0,10.0,4.8,1.2]},
-                        {icon:"🛺",name:"Keke",    vt:"keke", pct:[83.3,8.3,5.0,3.3]},
-                        {icon:"🚗",name:"Mini",    vt:"mini", pct:[78.6,10.0,7.1,4.3]},
-                        {icon:"🚌",name:"Full Bus",vt:"full", pct:[77.8,10.0,7.8,4.4]},
+                        {icon:"🏍️",name:"Bike",    vt:"bike", pct:[80.0,10.0,6.0,4.0]},
+                        {icon:"🛺",name:"Keke",    vt:"keke", pct:[83.3,10.0,4.0,2.7]},
+                        {icon:"🚗",name:"Mini",    vt:"mini", pct:[77.1,10.0,7.7,5.1]},
+                        {icon:"🚌",name:"Full Bus",vt:"full", pct:[77.8,10.0,7.3,4.9]},
                       ].map(row=>{
                         const sp=SPLIT[row.vt];
                         return(
@@ -1329,7 +1352,9 @@ export default function App(){
                     </tbody>
                   </table>
                   <div style={{fontSize:10,color:"rgba(255,255,255,.4)",marginTop:10,lineHeight:1.6}}>
-                    * Keke LMA is 8.3% (₦5k of ₦60k) reflecting the fixed 10% of investor pool portion, not gross remittance. All splits are pre-agreed fixed ₦ amounts per vehicle type.
+                    Rule 1: Investor share is paid first and always in full — any weekly shortfall is covered by the Contingency Reserve at monthly disbursement.<br/>
+                    Rule 2: LMA receives 10% of the gross weekly remittance, disbursed monthly to their LGA.<br/>
+                    Rule 3: The remainder (gross − investor − LMA) is split 60% RoyalTech / 40% Contingency Reserve.
                   </div>
                 </div>
 
