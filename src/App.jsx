@@ -1830,10 +1830,12 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">78 weeks</span></div>
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦1,950,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val hi">₦2,350,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 off per Bike Applicant referred</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 off per Keke Applicant referred</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 off per Bike referral</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 off per Keke referral</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 off per Mini (Korope) referral</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦300,000 off per Full Bus/Cab referral</span></div>
                     <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#166534",lineHeight:1.7}}>
-                      🎯 <strong>Referral Discount:</strong> Each confirmed referral shortens your repayment — same ₦25,000/week, fewer weeks. Up to 10 referrals.
+                      🎯 <strong>Referral Discount:</strong> Each confirmed referral shortens your repayment — same ₦25,000/week, fewer weeks. No limit on referrals.
                     </div>
                     <button className="btn btn-orange btn-full" onClick={()=>setModal("rider-bike")}>Apply for This Bike</button>
                   </div>
@@ -1856,10 +1858,12 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">104 weeks</span></div>
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦6,240,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:C.green,fontSize:16}}>₦6,840,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 off per Bike Applicant referred</span></div>
-                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 off per Keke Applicant referred</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 off per Bike referral</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 off per Keke referral</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 off per Mini (Korope) referral</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#1A7A3C"}}>₦300,000 off per Full Bus/Cab referral</span></div>
                     <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#166534",lineHeight:1.7}}>
-                      🎯 <strong>Referral Discount:</strong> Each confirmed referral shortens your repayment — same ₦60,000/week, fewer weeks. Up to 10 referrals.
+                      🎯 <strong>Referral Discount:</strong> Each confirmed referral shortens your repayment — same ₦60,000/week, fewer weeks. No limit on referrals.
                     </div>
                     <button className="btn btn-full" style={{background:C.green,color:C.white,marginTop:12}} onClick={()=>setModal("rider-keke")}>Apply for This Keke</button>
                   </div>
@@ -1882,8 +1886,12 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">156 weeks</span></div>
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦10,920,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:"#6366F1",fontSize:16}}>₦11,720,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#3730A3"}}>₦100,000 off per Bike referral</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#3730A3"}}>₦200,000 off per Keke referral</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#3730A3"}}>₦250,000 off per Mini (Korope) referral</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#3730A3"}}>₦300,000 off per Full Bus/Cab referral</span></div>
                     <div style={{background:"#EEF2FF",border:"1.5px solid #C7D2FE",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#3730A3",lineHeight:1.7}}>
-                      🎯 <strong>Referral Discount:</strong> Same weekly rate — referrals shorten your term. Up to 10 referrals.
+                      🎯 <strong>Referral Discount:</strong> Same weekly rate — referrals shorten your term. No limit on referrals.
                     </div>
                     <button className="btn btn-full" style={{background:"#4338CA",color:C.white,marginTop:12}} onClick={()=>setModal("rider-mini")}>Apply for Korope Mini</button>
                   </div>
@@ -1906,8 +1914,12 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">156 weeks</span></div>
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦14,040,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:"#DC2626",fontSize:16}}>₦15,040,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#991B1B"}}>₦100,000 off per Bike referral</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#991B1B"}}>₦200,000 off per Keke referral</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#991B1B"}}>₦250,000 off per Mini (Korope) referral</span></div>
+                    <div className="v-row"><span className="v-lbl">Referral Discount</span><span className="v-val" style={{color:"#991B1B"}}>₦300,000 off per Full Bus/Cab referral</span></div>
                     <div style={{background:"#FEF2F2",border:"1.5px solid #FECACA",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#991B1B",lineHeight:1.7}}>
-                      🎯 <strong>Referral Discount:</strong> Same weekly rate — referrals shorten your term. Up to 10 referrals.
+                      🎯 <strong>Referral Discount:</strong> Same weekly rate — referrals shorten your term. No limit on referrals.
                     </div>
                     <button className="btn btn-full" style={{background:"#B91C1C",color:C.white,marginTop:12}} onClick={()=>setModal("rider-full")}>Apply for Full Bus / Cab</button>
                   </div>
@@ -1943,9 +1955,11 @@ export default function App(){
               <div className="ref-box">
                 <p style={{color:"#AAA",fontSize:14,lineHeight:1.8,marginBottom:16}}>For every person you successfully refer to RideTrust, you receive a discount off your own outstanding HP balance. The more you refer, the less you owe.</p>
                 <div className="ref-grid">
-                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Bike applicant</div><div className="ref-item-b">Get ₦100,000 taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
-                  <div className="ref-item"><div className="ref-item-t">🛺 Refer a Keke applicant</div><div className="ref-item-b">Get ₦200,000 taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
-                  <div className="ref-item"><div className="ref-item-t">🔄 No limit</div><div className="ref-item-b">No limit on referrals. Each successful one reduces what you still owe on your own vehicle.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Bike applicant</div><div className="ref-item-b">Get <strong>₦100,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🛺 Refer a Keke applicant</div><div className="ref-item-b">Get <strong>₦200,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🚐 Refer a Mini (Korope) applicant</div><div className="ref-item-b">Get <strong>₦250,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🚌 Refer a Full Bus / Cab applicant</div><div className="ref-item-b">Get <strong>₦300,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🔄 No limit on referrals</div><div className="ref-item-b">Refer as many people as you want. Each successful referral reduces what you still owe — higher vehicle types earn you bigger discounts.</div></div>
                   <div className="ref-item"><div className="ref-item-t">✅ When it applies</div><div className="ref-item-b">Discount applies as soon as the person you referred pays their first deposit and becomes a committed subscriber. If they withdraw, the discount is reversed. Each person you refer automatically becomes one of your guarantors. And you likewise become their guarantor. Terms & Conditions apply.</div></div>
                 </div>
               </div>
