@@ -2106,8 +2106,8 @@ export default function App(){
                   <div style={{fontSize:11,color:"#94A3B8",marginBottom:14,lineHeight:1.5}}>Earned for each rider/driver you recruit who successfully takes delivery of their vehicle.</div>
                   <div className="earn-row"><span className="earn-lbl">🏍️ Refer a bike rider</span><span className="earn-val">₦100,000</span></div>
                   <div className="earn-row"><span className="earn-lbl">🛺 Refer a keke rider</span><span className="earn-val">₦200,000</span></div>
-                  <div className="earn-row"><span className="earn-lbl">🚐 Refer a minibus rider</span><span className="earn-val">₦250,000</span></div>
-                  <div className="earn-row"><span className="earn-lbl">🚌 Refer a full bus rider</span><span className="earn-val">₦300,000</span></div>
+                  <div className="earn-row"><span className="earn-lbl">🚐 Refer a minibus driver</span><span className="earn-val">₦250,000</span></div>
+                  <div className="earn-row"><span className="earn-lbl">🚌 Refer a full bus / cab driver</span><span className="earn-val">₦300,000</span></div>
                   <div style={{marginTop:12,fontSize:11,color:"#64748B",lineHeight:1.6,borderTop:"1px solid #334155",paddingTop:10}}>
                     ✅ Redeemable: After the referred rider takes delivery of their vehicle and makes their <strong style={{color:"#94A3B8"}}>first weekly remittance</strong>.
                   </div>
