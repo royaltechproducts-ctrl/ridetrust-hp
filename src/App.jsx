@@ -1337,31 +1337,32 @@ export default function App(){
                     </thead>
                     <tbody>
                       {[
-                        {icon:"🏍️",name:"Bike",    vt:"bike", pct:[80.0,10.0,6.0,4.0]},
-                        {icon:"🛺",name:"Keke",    vt:"keke", pct:[83.3,10.0,4.0,2.7]},
-                        {icon:"🚗",name:"Mini",    vt:"mini", pct:[77.1,10.0,7.7,5.1]},
-                        {icon:"🚌",name:"Full Bus",vt:"full", pct:[77.8,10.0,7.3,4.9]},
+                        {icon:"🏍️",name:"Bike",    vt:"bike"},
+                        {icon:"🛺",name:"Keke",    vt:"keke"},
+                        {icon:"🚗",name:"Mini",    vt:"mini"},
+                        {icon:"🚌",name:"Full Bus",vt:"full"},
                       ].map(row=>{
                         const sp=SPLIT[row.vt];
+                        const pct=v=>+(v/sp.weekly*100).toFixed(1);
                         return(
                           <tr key={row.vt} style={{borderBottom:"1px solid rgba(255,255,255,.08)"}}>
                             <td style={{padding:"9px 10px",fontWeight:700}}>{row.icon} {row.name}</td>
                             <td style={{padding:"9px 10px",color:C.orange,fontWeight:700}}>₦{sp.weekly.toLocaleString()}</td>
                             <td style={{padding:"9px 10px"}}>
                               <span style={{fontWeight:700}}>₦{sp.inv.toLocaleString()}</span>
-                              <span style={{opacity:.5,marginLeft:4}}>({row.pct[0]}%)</span>
+                              <span style={{opacity:.5,marginLeft:4}}>({pct(sp.inv)}%)</span>
                             </td>
                             <td style={{padding:"9px 10px"}}>
                               <span style={{fontWeight:700}}>₦{sp.lma.toLocaleString()}</span>
-                              <span style={{opacity:.5,marginLeft:4}}>({row.pct[1]}%)</span>
+                              <span style={{opacity:.5,marginLeft:4}}>({pct(sp.lma)}%)</span>
                             </td>
                             <td style={{padding:"9px 10px"}}>
                               <span style={{fontWeight:700}}>₦{sp.rt.toLocaleString()}</span>
-                              <span style={{opacity:.5,marginLeft:4}}>({row.pct[2]}%)</span>
+                              <span style={{opacity:.5,marginLeft:4}}>({pct(sp.rt)}%)</span>
                             </td>
                             <td style={{padding:"9px 10px"}}>
                               <span style={{fontWeight:700}}>₦{sp.reserve.toLocaleString()}</span>
-                              <span style={{opacity:.5,marginLeft:4}}>({row.pct[3]}%)</span>
+                              <span style={{opacity:.5,marginLeft:4}}>({pct(sp.reserve)}%)</span>
                             </td>
                           </tr>
                         );
