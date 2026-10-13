@@ -318,11 +318,11 @@ export default function App(){
     setLoading(false);
   };
 
-  // Fund split formula (Rule 1: Investor fixed priority, Rule 2: LMA=10% of gross, Rule 3: remainder 60% RT / 40% reserve)
-  // bike:  gross ₦25k → inv ₦20k | lma 10%=₦2,500 | remainder ₦2,500 → rt 60%=₦1,500 | reserve 40%=₦1,000
-  // keke:  gross ₦60k → inv ₦50k | lma 10%=₦6,000 | remainder ₦4,000 → rt 60%=₦2,400 | reserve 40%=₦1,600
-  // mini:  gross ₦70k → inv ₦54k | lma 10%=₦7,000 | remainder ₦9,000 → rt 60%=₦5,400 | reserve 40%=₦3,600
-  // full:  gross ₦90k → inv ₦70k | lma 10%=₦9,000 | remainder ₦11,000→ rt 60%=₦6,600 | reserve 40%=₦4,400
+  // Fund split formula (Rule 1: Investor fixed priority, Rule 2: LMA=6% of gross, Rule 3: remainder 50% RT / 50% Pool)
+  // bike:  gross ₦40k → inv ₦35k | lma 6%=₦2,400 | remainder ₦2,600 → rt 50%=₦1,300 | pool 50%=₦1,300
+  // keke:  gross ₦90k → inv ₦75k | lma 6%=₦5,400 | remainder ₦9,600 → rt 50%=₦4,800 | pool 50%=₦4,800
+  // mini:  gross ₦100k → inv ₦84k | lma 6%=₦6,000 | remainder ₦10,000 → rt 50%=₦5,000 | pool 50%=₦5,000
+  // full:  gross ₦120k → inv ₦90k | lma 6%=₦7,200 | remainder ₦22,800 → rt 50%=₦11,400 | pool 50%=₦11,400
   // bike:  ₦25,000/wk → inv ₦20,000 | LMA ₦2,500 | RT ₦1,200 | reserve ₦1,300 (no-LMA: RT gets ₦3,700)
   // keke:  ₦60,000/wk → inv ₦50,000 | LMA ₦5,000 | RT ₦3,000 | reserve ₦2,000 (no-LMA: RT gets ₦8,000)
   // mini:  ₦70,000/wk → inv ₦54,000 | LMA ₦7,000 | RT ₦5,000 | reserve ₦4,000 (no-LMA: RT gets ₦12,000)
@@ -1330,7 +1330,7 @@ export default function App(){
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,color:C.white,minWidth:520}}>
                     <thead>
                       <tr style={{borderBottom:"1px solid rgba(255,255,255,.2)"}}>
-                        {["Vehicle","Weekly In","Investor Pool","LMA (10% gross)","RoyalTech (60% rem.)","Reserve (40% rem.)"].map(h=>(
+                        {["Vehicle","Weekly In","Investor Pool","LMA (6% gross)","RoyalTech (50% rem.)","Pool (50% rem.)"].map(h=>(
                           <th key={h} style={{textAlign:"left",padding:"6px 10px",opacity:.6,fontWeight:600,letterSpacing:.5}}>{h}</th>
                         ))}
                       </tr>
@@ -1370,8 +1370,8 @@ export default function App(){
                   </table>
                   <div style={{fontSize:10,color:"rgba(255,255,255,.4)",marginTop:10,lineHeight:1.6}}>
                     Rule 1: Investor share is paid first and always in full — any weekly shortfall is covered by the Contingency Reserve at monthly disbursement.<br/>
-                    Rule 2: LMA receives 10% of the gross weekly remittance, disbursed monthly to their LGA.<br/>
-                    Rule 3: The remainder (gross − investor − LMA) is split 60% RoyalTech / 40% Contingency Reserve.
+                    Rule 2: LMA receives 6% of the gross weekly remittance, disbursed monthly to their LGA.<br/>
+                    Rule 3: The remainder (gross − investor − LMA) is split 50% RoyalTech / 50% Contingency Reserve (Pool).
                   </div>
                 </div>
 
@@ -2157,7 +2157,7 @@ export default function App(){
 
                 <div style={{color:C.orange,fontWeight:700,marginBottom:4,fontSize:12}}>A. Weekly Commission (Remittance)</div>
                 1. Commission is calculated as a percentage of the amount actually remitted by the rider each week, on a three-tier scale:<br/>
-                &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Full remittance (100% of weekly target)</strong> → LMA earns <strong style={{color:"#4ADE80"}}>10%</strong> of the amount paid.<br/>
+                &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Full remittance (100% of weekly target)</strong> → LMA earns <strong style={{color:"#4ADE80"}}>6%</strong> of the amount paid.<br/>
                 &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Shortfall (50% to 99% of weekly target)</strong> → LMA earns <strong style={{color:"#FCD34D"}}>5%</strong> of the amount paid.<br/>
                 &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Below 50% of weekly target</strong> → LMA earns <strong style={{color:"#F87171"}}>0%</strong> — no commission for that week.<br/>
                 2. The percentage is applied to what the rider actually paid, not the weekly target amount.<br/>
