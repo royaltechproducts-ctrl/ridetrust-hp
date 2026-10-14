@@ -229,10 +229,35 @@ function Footer(){
 
 
 
+// ── Referral URL helpers ──────────────────────────────────────
+const BASE_URL = "https://ridetrust.com.ng";
+const DEST_MAP = { riders:"ride", lma:"agent", investors:"invest" };
+
+const parseReferral = () => {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    refType: params.get("ref"),   // 'admin' | 'lma' | 'rider'
+    refId:   params.get("id"),    // uuid for lma/rider links, null for admin
+    dest:    params.get("to"),    // 'riders' | 'lma' | 'investors'
+  };
+};
+
+const logVisit = async (refType, refId, destination) => {
+  if(!refType || !destination) return;
+  await sb.from("referral_visits").insert({
+    ref_type: refType,
+    ref_id:   refId || null,
+    destination,
+    user_agent: navigator.userAgent,
+  });
+};
+
 // ── Main App ─────────────────────────────────────────────────
 export default function App(){
-  // Detect page from URL path
+  // Detect page from URL path — also handles referral ?to= param
   const getPage = () => {
+    const { dest } = parseReferral();
+    if(dest && DEST_MAP[dest]) return DEST_MAP[dest];
     const h = window.location.hash.replace(/^#\/?/,"").toLowerCase();
     const p = window.location.pathname.replace(/\//g,"").toLowerCase();
     return ["ride","agent","invest"].includes(h) ? h : ["ride","agent","invest"].includes(p) ? p : "access";
@@ -255,6 +280,10 @@ export default function App(){
   const [loading,   setLoading]   = useState(false);
   const [ga4,       setGa4]       = useState(null);
   const [ga4Err,    setGa4Err]    = useState(null);
+  // Referral system
+  const [refVisits,    setRefVisits]    = useState([]);
+  const [refVisitsErr, setRefVisitsErr] = useState(null);
+  const [copiedKey,    setCopiedKey]    = useState(null);
   // Rider portal
   const [riderPortal, setRiderPortal] = useState(null); // logged-in rider object
   const [rPortalTab,  setRPortalTab]  = useState("overview");
@@ -418,6 +447,12 @@ export default function App(){
     showToast(amt>=sp.weekly?"Remittance recorded. All buckets updated.":"⚠️ Short remittance recorded. Contingency reserve absorbs investor shortfall next disbursement.");
   };
 
+  // Log referral visit on mount if URL carries ref params
+  useEffect(()=>{
+    const { refType, refId, dest } = parseReferral();
+    if(refType && dest) logVisit(refType, refId, dest);
+  },[]);
+
   useEffect(()=>{ if(adminOn) loadData(); },[adminOn]);
 
   useEffect(()=>{
@@ -426,6 +461,13 @@ export default function App(){
         .then(r=>r.json())
         .then(d=>{ if(d.error) setGa4Err(d.error); else setGa4(d); })
         .catch(e=>setGa4Err(e.message));
+    }
+  },[adminOn, adminTab]);
+
+  useEffect(()=>{
+    if(adminOn && adminTab==="referrals"){
+      sb.from("referral_visits").select("*").order("visited_at",{ascending:false})
+        .then(({data,error})=>{ if(error) setRefVisitsErr(error.message); else setRefVisits(data||[]); });
     }
   },[adminOn, adminTab]);
 
@@ -441,6 +483,8 @@ export default function App(){
     if(!form.name?.trim()||!form.phone?.trim()||!form.email?.trim()){
       showToast("Please fill in all required fields."); return;
     }
+    // Capture referral attribution from URL
+    const { refType, refId, dest } = parseReferral();
     try {
       if(type==="rider-bike"||type==="rider-keke"||type==="rider-mini"||type==="rider-full"){
         const pwd  = genPassword("R");
@@ -455,10 +499,22 @@ export default function App(){
           password: pwd,
           referral_code: rcode,
           referred_by: form.referrer||null,
+          ref_type: refType||null,
+          ref_id: refId||null,
           app_status: "under_review",
           rider_status: "not_committed",
           hp_discount_balance: 0,
         }).select().single();
+        // Mark referral visit as converted
+        if(refType && dest){
+          await sb.from("referral_visits")
+            .update({converted:true})
+            .eq("ref_type", refType)
+            .eq("destination", dest)
+            .eq("converted", false)
+            .order("visited_at",{ascending:false})
+            .limit(1);
+        }
         // Auto mutual guarantee — if referred by someone, link them
         if(form.referrer&&newRider){
           // Find referrer by name or phone
@@ -504,7 +560,14 @@ export default function App(){
           photo_id: form.photoId||null,
           tech_skills: form.techSkills?Number(form.techSkills):null,
           biz_experience: form.bizExp?Number(form.bizExp):null,
+          ref_type: refType||null,
+          ref_id: refId||null,
         });
+        if(refType && dest){
+          await sb.from("referral_visits").update({converted:true})
+            .eq("ref_type",refType).eq("destination",dest).eq("converted",false)
+            .order("visited_at",{ascending:false}).limit(1);
+        }
       } else if(type==="invest-bike"||type==="invest-keke"||type==="invest-mini"||type==="invest-full"){
         const pkgMap = {"invest-bike":"bike","invest-keke":"keke","invest-mini":"mini","invest-full":"full"};
         await sb.from("rt_investors").insert({
@@ -513,7 +576,14 @@ export default function App(){
           units: form.units?Number(form.units.split(" ")[0]):1,
           photo_id: form.photoId||null,
           notes: form.notes||null,
+          ref_type: refType||null,
+          ref_id: refId||null,
         });
+        if(refType && dest){
+          await sb.from("referral_visits").update({converted:true})
+            .eq("ref_type",refType).eq("destination",dest).eq("converted",false)
+            .order("visited_at",{ascending:false}).limit(1);
+        }
       }
       showToast("Application submitted! Check your email for your portal access details.");
       setModal(null); setForm({});
@@ -965,6 +1035,7 @@ export default function App(){
             {k:"remittances",label:"💵 Remittances"},
             {k:"buckets",label:"🪣 Fund Buckets"},
             {k:"documents",label:"📄 Legal Docs"},
+            {k:"referrals",label:"🔗 Referral Links"},
             ].map(t=>(
               <button key={t.k} onClick={()=>setAdminTab(t.k)}
                 style={{padding:"14px 16px",background:"none",border:"none",
@@ -1786,6 +1857,146 @@ export default function App(){
                 </div>
               </div>
             )}
+
+            {/* ══ REFERRAL LINKS TAB ══════════════════════════ */}
+            {adminTab==="referrals"&&(
+              <div>
+                {/* ── Copy helper ── */}
+                {(()=>{
+                  const copyLink = (key, url) => {
+                    navigator.clipboard.writeText(url).then(()=>{
+                      setCopiedKey(key);
+                      setTimeout(()=>setCopiedKey(null), 2000);
+                    });
+                  };
+
+                  const CopyBtn = ({linkKey, url}) => (
+                    <button onClick={()=>copyLink(linkKey, url)}
+                      style={{padding:"7px 14px",borderRadius:6,border:"1.5px solid "+(copiedKey===linkKey?C.green:C.orange),
+                        background:copiedKey===linkKey?"#DCFCE7":C.white,color:copiedKey===linkKey?C.green:C.orange,
+                        fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",minWidth:90,transition:"all .2s"}}>
+                      {copiedKey===linkKey?"✅ Copied!":"📋 Copy"}
+                    </button>
+                  );
+
+                  const LinkRow = ({label, linkKey, url}) => (
+                    <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid "+C.lightgr,flexWrap:"wrap"}}>
+                      <span style={{fontSize:13,color:C.black,fontWeight:600,minWidth:200,flex:1}}>{label}</span>
+                      <span style={{fontSize:11,color:C.grey,fontFamily:"monospace",flex:2,wordBreak:"break-all",background:C.offwhite,padding:"4px 8px",borderRadius:4}}>{url}</span>
+                      <CopyBtn linkKey={linkKey} url={url}/>
+                    </div>
+                  );
+
+                  // Per-LMA links
+                  const lmaLinks = agents.filter(a=>a.status==="approved").map(a=>({
+                    id: a.id,
+                    name: a.name,
+                    riderUrl:  `${BASE_URL}/?ref=lma&id=${a.id}&to=riders`,
+                    lmaUrl:    `${BASE_URL}/?ref=lma&id=${a.id}&to=lma`,
+                  }));
+
+                  // Per-rider links
+                  const riderLinks = riders.filter(r=>r.status==="active").map(r=>({
+                    id: r.id,
+                    name: r.name,
+                    url: `${BASE_URL}/?ref=rider&id=${r.id}&to=riders`,
+                  }));
+
+                  // Referral visit stats
+                  const totalVisits = refVisits.length;
+                  const converted  = refVisits.filter(v=>v.converted).length;
+                  const byDest = ["riders","lma","investors"].map(d=>({
+                    dest: d,
+                    count: refVisits.filter(v=>v.destination===d).length,
+                  }));
+                  const byType = ["admin","lma","rider"].map(t=>({
+                    type: t,
+                    count: refVisits.filter(v=>v.ref_type===t).length,
+                  }));
+                  const today = new Date().toDateString();
+                  const todayCount = refVisits.filter(v=>new Date(v.visited_at).toDateString()===today).length;
+
+                  return (
+                    <div>
+                      {/* Stats row */}
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:24}}>
+                        {[
+                          {label:"Total Link Visits",value:totalVisits,color:C.blue},
+                          {label:"Today's Visits",value:todayCount,color:C.orange},
+                          {label:"Conversions",value:converted,color:C.green},
+                          {label:"Rider Page Visits",value:byDest.find(b=>b.dest==="riders")?.count||0,color:C.black},
+                          {label:"LMA Page Visits",value:byDest.find(b=>b.dest==="lma")?.count||0,color:C.blue},
+                          {label:"Investor Page Visits",value:byDest.find(b=>b.dest==="investors")?.count||0,color:C.purple},
+                        ].map(s=>(
+                          <div key={s.label} style={{background:C.white,borderRadius:8,padding:14,border:"1.5px solid "+C.lightgr,textAlign:"center"}}>
+                            <div style={{fontWeight:900,fontSize:26,color:s.color}}>{s.value}</div>
+                            <div style={{fontSize:10,color:C.grey,marginTop:4,lineHeight:1.4}}>{s.label}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Admin links */}
+                      <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:20}}>
+                        <div style={{fontWeight:800,fontSize:14,color:C.black,marginBottom:4}}>🏢 Admin Referral Links</div>
+                        <div style={{fontSize:12,color:C.grey,marginBottom:14}}>Share these on WhatsApp or any channel to direct audiences to the right landing page.</div>
+                        <LinkRow label="🏍️ Riders / Drivers Page"   linkKey="admin-riders"    url={`${BASE_URL}/?ref=admin&to=riders`}/>
+                        <LinkRow label="🤝 LMA Recruitment Page"     linkKey="admin-lma"       url={`${BASE_URL}/?ref=admin&to=lma`}/>
+                        <LinkRow label="💰 Investors Page"           linkKey="admin-investors" url={`${BASE_URL}/?ref=admin&to=investors`}/>
+                      </div>
+
+                      {/* LMA links */}
+                      <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:20}}>
+                        <div style={{fontWeight:800,fontSize:14,color:C.black,marginBottom:4}}>🤝 LMA Unique Referral Links</div>
+                        <div style={{fontSize:12,color:C.grey,marginBottom:14}}>Each approved LMA gets two links — one to recruit riders, one to recruit new LMAs. Applications are automatically attributed.</div>
+                        {lmaLinks.length===0&&<div style={{fontSize:12,color:C.grey,textAlign:"center",padding:16}}>No approved LMAs yet.</div>}
+                        {lmaLinks.map(l=>(
+                          <div key={l.id} style={{marginBottom:16,background:C.offwhite,borderRadius:8,padding:14}}>
+                            <div style={{fontWeight:700,fontSize:13,marginBottom:8,color:C.black}}>👤 {l.name}</div>
+                            <LinkRow label="→ Refer Riders/Drivers" linkKey={`lma-riders-${l.id}`} url={l.riderUrl}/>
+                            <LinkRow label="→ Recruit New LMA"      linkKey={`lma-lma-${l.id}`}    url={l.lmaUrl}/>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Rider links */}
+                      <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:20}}>
+                        <div style={{fontWeight:800,fontSize:14,color:C.black,marginBottom:4}}>🏍️ Active Rider Unique Referral Links</div>
+                        <div style={{fontSize:12,color:C.grey,marginBottom:14}}>Each active rider gets one link. When someone applies through it, the discount is credited to that rider's HP balance.</div>
+                        {riderLinks.length===0&&<div style={{fontSize:12,color:C.grey,textAlign:"center",padding:16}}>No active riders yet.</div>}
+                        {riderLinks.map(r=>(
+                          <div key={r.id} style={{marginBottom:8}}>
+                            <LinkRow label={"🏍️ "+r.name} linkKey={`rider-${r.id}`} url={r.url}/>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Recent visits log */}
+                      <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr}}>
+                        <div style={{fontWeight:800,fontSize:14,color:C.black,marginBottom:14}}>📋 Recent Link Visits</div>
+                        {refVisitsErr&&<div style={{color:"#DC2626",fontSize:12,marginBottom:8}}>⚠️ {refVisitsErr}</div>}
+                        {refVisits.length===0&&!refVisitsErr&&<div style={{color:C.grey,fontSize:12,textAlign:"center",padding:16}}>No visits recorded yet. Share the links above to get started.</div>}
+                        {refVisits.slice(0,50).map(v=>{
+                          const who = v.ref_type==="admin" ? "Admin link" :
+                            v.ref_type==="lma"  ? (agents.find(a=>a.id===v.ref_id)?.name||"LMA (unknown)")+" (LMA)" :
+                            v.ref_type==="rider"? (riders.find(r=>r.id===v.ref_id)?.name||"Rider (unknown)")+" (Rider)" : v.ref_type;
+                          const dest = v.destination==="riders"?"Riders page":v.destination==="lma"?"LMA page":"Investors page";
+                          const when = new Date(v.visited_at).toLocaleString("en-NG",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+                          return(
+                            <div key={v.id} style={{display:"flex",gap:10,alignItems:"center",padding:"7px 0",borderBottom:"1px solid "+C.lightgr,flexWrap:"wrap",fontSize:12}}>
+                              <span style={{color:C.grey,minWidth:110}}>{when}</span>
+                              <span style={{fontWeight:600,flex:1}}>{who}</span>
+                              <span style={{color:C.blue,minWidth:100}}>{dest}</span>
+                              <span style={{color:v.converted?C.green:C.grey,fontWeight:v.converted?700:400}}>{v.converted?"✅ Converted":"–"}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
           </div>
         </div>
       )}
