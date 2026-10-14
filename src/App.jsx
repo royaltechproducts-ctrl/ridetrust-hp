@@ -318,27 +318,21 @@ export default function App(){
     setLoading(false);
   };
 
-  // Fund split formula (Rule 1: Investor fixed priority, Rule 2: LMA=6% of gross, Rule 3: remainder 50% RT / 50% Pool)
-  // bike:  gross ₦40k → inv ₦35k | lma 6%=₦2,400 | remainder ₦2,600 → rt 50%=₦1,300 | pool 50%=₦1,300
-  // keke:  gross ₦90k → inv ₦75k | lma 6%=₦5,400 | remainder ₦9,600 → rt 50%=₦4,800 | pool 50%=₦4,800
-  // mini:  gross ₦100k → inv ₦84k | lma 6%=₦6,000 | remainder ₦10,000 → rt 50%=₦5,000 | pool 50%=₦5,000
-  // full:  gross ₦115k → inv ₦95k | lma 6%=₦6,900 | remainder ₦13,100 → rt 50%=₦6,550 | pool 50%=₦6,550
-  // bike:  ₦25,000/wk → inv ₦20,000 | LMA ₦2,500 | RT ₦1,200 | reserve ₦1,300 (no-LMA: RT gets ₦3,700)
-  // keke:  ₦60,000/wk → inv ₦50,000 | LMA ₦5,000 | RT ₦3,000 | reserve ₦2,000 (no-LMA: RT gets ₦8,000)
-  // mini:  ₦70,000/wk → inv ₦54,000 | LMA ₦7,000 | RT ₦5,000 | reserve ₦4,000 (no-LMA: RT gets ₦12,000)
-  // New split formula (Oct 2026):
+  // Fund split formula (Rule 1: Investor fixed priority, Rule 2: LMA=10% of gross, Rule 3: remainder 50% RT / 50% Pool)
+  // New split formula (Oct 2026 v2):
   // Rule 1: Investor gets fixed weekly amount (first priority)
-  // Rule 2: LMA gets 6% of gross weekly remittance
+  // Rule 2: LMA gets 10% of gross weekly remittance
   // Rule 3: Remainder split 50% RoyalTech / 50% Pool (reserve)
-  // bike:  ₦40,000/wk → inv ₦35,000 | LMA ₦2,400 | RT ₦1,300 | pool ₦1,300
-  // keke:  ₦90,000/wk → inv ₦75,000 | LMA ₦5,400 | RT ₦4,800 | pool ₦4,800
-  // mini:  ₦100,000/wk → inv ₦84,000 | LMA ₦6,000 | RT ₦5,000 | pool ₦5,000
-  // full:  ₦115,000/wk → inv ₦95,000 | LMA ₦6,900 | RT ₦6,550 | pool ₦6,550
+  // bike:  ₦40,000/wk → inv ₦32,000 | LMA 10%=₦4,500* | rem ₦3,500 → rt ₦1,750 | pool ₦1,750
+  // keke:  ₦90,000/wk → inv ₦65,000 | LMA 10%=₦9,000  | rem ₦16,000 → rt ₦8,000 | pool ₦8,000
+  // mini:  ₦90,000/wk → inv ₦65,000 | LMA 10%=₦9,000  | rem ₦16,000 → rt ₦8,000 | pool ₦8,000
+  // full:  ₦120,000/wk → inv ₦90,000 | LMA 10%=₦12,000 | rem ₦18,000 → rt ₦9,000 | pool ₦9,000
+  // *Bike LMA amount (₦4,500) is fixed per confirmed rate; lmaRate derived from sp.lma/sp.weekly for split logic
   const SPLIT = {
-    bike:  {weekly:40000,  inv:35000, lma:2400,  rt:1300,  reserve:1300},
-    keke:  {weekly:90000,  inv:75000, lma:5400,  rt:4800,  reserve:4800},
-    mini:  {weekly:100000, inv:84000, lma:6000,  rt:5000,  reserve:5000},
-    full:  {weekly:115000, inv:95000, lma:6900,  rt:6550,  reserve:6550},
+    bike:  {weekly:40000,  inv:32000, lma:4500,  rt:1750,  reserve:1750},
+    keke:  {weekly:90000,  inv:65000, lma:9000,  rt:8000,  reserve:8000},
+    mini:  {weekly:90000,  inv:65000, lma:9000,  rt:8000,  reserve:8000},
+    full:  {weekly:120000, inv:90000, lma:12000, rt:9000,  reserve:9000},
   };
 
   // Deposit split — triggered once a rider's deposit bucket hits 100% of target
@@ -360,7 +354,7 @@ export default function App(){
     const hasLma = remitForm.has_lma;
     // Split calculation — 3-rule formula
     // Rule 1: Investor gets fixed share (highest priority; shortfall absorbed by reserve)
-    // Rule 2: LMA gets 6% of gross weekly remittance
+    // Rule 2: LMA gets 10% of gross weekly remittance
     // Rule 3: Remainder split 50% RoyalTech / 50% Pool
     const sp = SPLIT[vt] || SPLIT.keke;
     const expected = sp.weekly;
@@ -382,7 +376,7 @@ export default function App(){
       return;
     }
     // Normal / partial split
-    const lmaRate  = sp.lma / sp.weekly;                         // Rule 2: rate derived from SPLIT (6% all vehicle types)
+    const lmaRate  = sp.lma / sp.weekly;                         // Rule 2: rate derived from SPLIT (10% gross, all vehicle types)
     const invAmt   = sp.inv;                                     // Rule 1: fixed investor amount
     const agentAmt = hasLma ? Math.round(amt * lmaRate) : 0;    // Rule 2: lmaRate% of gross to LMA
     const remainder = amt - invAmt - agentAmt;
@@ -640,14 +634,14 @@ export default function App(){
                     {riderPortal.vehicle_type==="bike"?"🏍️ Dispatch Bike":"🛺 Keke Tricycle"} — Your HP Deal
                   </div>
                   {riderPortal.vehicle_type==="bike"?(<>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP Package Value</span><strong>₦1,800,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP Package Value</span><strong>₦2,000,000</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Insurance & Plate License Reg</span><strong>Inclusive</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Initial deposit</span><strong style={{color:C.orange}}>₦200,000</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Deposit spread</span><strong>3 months</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Weekly remittance</span><strong>₦40,000 / week</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>40 weeks</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total HP payments</span><strong>₦1,600,000</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.orange}}>₦1,800,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>45 weeks</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total HP payments</span><strong>₦1,800,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.orange}}>₦2,000,000</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦100,000 / Referral of new Bike Applicant</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦200,000 / Referral of new Keke Applicant</strong></div>
                   </>):(<>
@@ -823,7 +817,7 @@ export default function App(){
                       <div class="field"><label>Applicant Phone Number</label><div class="line"></div></div>
                       <div class="field"><label>Applicant Email Address</label><div class="line"></div></div>
                       <div class="field"><label>Applicant Referral Code</label><div class="line">${riderPortal.referral_code}</div></div>
-                      <div class="field"><label>Vehicle Type Applied For</label><div class="line">${{bike:"Dispatch Bike (HP Value: ₦1,800,000)",keke:"Keke Tricycle (HP Value: ₦7,620,000)",mini:"Mini Korope 4-Wheel (HP Value: ₦11,200,000)",full:"Full Bus / Cab 4-Wheel (HP Value: ₦15,950,000)"}[riderPortal.vehicle_type]||riderPortal.vehicle_type}</div></div>
+                      <div class="field"><label>Vehicle Type Applied For</label><div class="line">${{bike:"Dispatch Bike (HP Value: ₦2,000,000)",keke:"Keke Tricycle (HP Value: ₦7,620,000)",mini:"Mini Korope 4-Wheel (HP Value: ₦12,500,000)",full:"Full Bus / Cab 4-Wheel (HP Value: ₦19,240,000)"}[riderPortal.vehicle_type]||riderPortal.vehicle_type}</div></div>
                     </div>
                     <div class="section"><h3>Guarantor Details (to be filled by the guarantor)</h3>
                       <div class="field"><label>Full Name of Guarantor</label><div class="line"></div></div>
@@ -1067,7 +1061,7 @@ export default function App(){
                           async()=>{
                             await sb.from("rt_riders").update({rider_status:"committed_applicant"}).eq("id",r.id);
                             const vType = r.vehicle_type==="bike"?"Dispatch Bike":"Keke Tricycle";
-                            const totalHP = {bike:"₦1,800,000",keke:"₦7,620,000",mini:"₦11,200,000",full:"₦15,950,000"}[r.vehicle_type]||"₦7,620,000";
+                            const totalHP = {bike:"₦2,000,000",keke:"₦7,620,000",mini:"₦12,500,000",full:"₦19,240,000"}[r.vehicle_type]||"₦7,620,000";
                             const waMsg = `Dear ${r.full_name},\n\nYour deposit payment for the ${vType} hire purchase has been received and confirmed. You are now a COMMITTED APPLICANT on RideTrust HP.\n\nNext Steps:\n- RoyalTech will now match you with a Sponsoring Investor within 14 working days\n- Once matched, your brand new ${vType} will be delivered to you\n- If no investor match is made within 30 days, you are entitled to request a full refund of your deposit\n\nYour HP Details:\nTotal to own: ${totalHP}\nWeekly remittance starts from delivery date every Monday\n\nYour referral code: ${r.referral_code}\nKeep referring to earn discounts on your HP balance.\n\nRideTrust HP | RoyalTech`;
                             console.log("ADMIN — SEND THIS WHATSAPP TO "+r.phone+":\n"+waMsg);
                             await loadData();
@@ -1263,7 +1257,7 @@ export default function App(){
                     const amt = Number(remitForm.amount);
                     const hasLma = remitForm.has_lma;
                     const sp2 = SPLIT[vt]||SPLIT.keke;
-                    // Rule 1: investor fixed | Rule 2: LMA % of gross (rate from SPLIT) | Rule 3: remainder 50/50
+                    // Rule 1: investor fixed | Rule 2: LMA 10% of gross (rate from SPLIT) | Rule 3: remainder 50/50
                     const lmaRate2 = sp2.lma / sp2.weekly;
                     const invA    = Math.min(amt, sp2.inv);
                     const agentA  = hasLma ? Math.round(amt * lmaRate2) : 0;
@@ -1332,7 +1326,7 @@ export default function App(){
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,color:C.white,minWidth:520}}>
                     <thead>
                       <tr style={{borderBottom:"1px solid rgba(255,255,255,.2)"}}>
-                        {["Vehicle","Weekly In","Investor Pool","LMA (6% gross)","RoyalTech (50% rem.)","Pool (50% rem.)"].map(h=>(
+                        {["Vehicle","Weekly In","Investor Pool","LMA (10% gross)","RoyalTech (50% rem.)","Pool (50% rem.)"].map(h=>(
                           <th key={h} style={{textAlign:"left",padding:"6px 10px",opacity:.6,fontWeight:600,letterSpacing:.5}}>{h}</th>
                         ))}
                       </tr>
@@ -1373,7 +1367,7 @@ export default function App(){
                   </table>
                   <div style={{fontSize:10,color:"rgba(255,255,255,.4)",marginTop:10,lineHeight:1.6}}>
                     Rule 1: Investor share is paid first and always in full — any weekly shortfall is covered by the Contingency Reserve at monthly disbursement.<br/>
-                    Rule 2: LMA receives 6% of the gross weekly remittance, disbursed monthly to their LGA.<br/>
+                    Rule 2: LMA receives 10% of the gross weekly remittance, disbursed monthly to their LGA.<br/>
                     Rule 3: The remainder (gross − investor − LMA) is split 50% RoyalTech / 50% Contingency Reserve (Pool).
                   </div>
                 </div>
@@ -1643,15 +1637,15 @@ export default function App(){
                 <div style={{fontSize:12,color:C.grey,marginBottom:24}}>All 7 governing documents. Copy or download as needed for printing, signing, or archiving.</div>
                 {[
                   {id:"doc1", title:"Document 1 — Hire Purchase Agreement (Bike / 2-Wheel)", emoji:"🏍️",
-                   desc:"Master HP agreement between RoyalTech and bike rider. Covers title retention, weekly instalments (₦40k × 40 wks), deposit (₦200k), default & repossession clauses."},
+                   desc:"Master HP agreement between RoyalTech and bike rider. Covers title retention, weekly instalments (₦40k × 45 wks), deposit (₦200k), default & repossession clauses."},
                   {id:"doc2", title:"Document 2 — Hire Purchase Agreement (Keke / 3-Wheel)", emoji:"🛺",
                    desc:"Master HP agreement for tricycle (keke napep). Weekly instalments ₦90k × 78 wks, deposit ₦600k. Includes guarantor obligations and referral discount schedule."},
                   {id:"doc2a",title:"Document 2A — HP Agreement (Four Wheels Mini — Korope)", emoji:"🚗",
-                   desc:"HP for clean Tokunbo Korope / 4-wheel mini. ₦800k deposit, ₦100k/wk × 104 wks = ₦10,400,000 HP repayment."},
+                   desc:"HP for clean Tokunbo Korope / 4-wheel mini. ₦800k deposit, ₦90k/wk × 130 wks = ₦11,700,000 HP repayment."},
                   {id:"doc2b",title:"Document 2B — HP Agreement (Four Wheels Full — Hiace / Cab Ride)", emoji:"🚌",
-                   desc:"HP for full Hiace bus or cab. ₦1M deposit, ₦115k/wk × 130 wks = ₦14,950,000 HP repayment."},
+                   desc:"HP for full Hiace bus or cab. ₦1M deposit, ₦120k/wk × 152 wks = ₦18,240,000 HP repayment."},
                   {id:"doc3", title:"Document 3 — Local Marketing Agent (LMA) Agreement", emoji:"🤝",
-                   desc:"LMA recruitment, commission (6% of confirmed weekly instalments), tiered commission reserve model, referral bonus, performance incentive, and prohibition on handling rider funds."},
+                   desc:"LMA recruitment, commission (10% of confirmed weekly instalments), tiered commission reserve model, referral bonus, performance incentive, and prohibition on handling rider funds."},
                   {id:"doc4", title:"Document 4 — Investor Agreement", emoji:"💼",
                    desc:"Investment terms, weekly harvest accrual schedule, payout structure, fund segregation, and exit/transfer provisions for all 4 vehicle-type investment packages."},
                   {id:"doc5", title:"Document 5 — Guarantor Agreement", emoji:"🛡️",
@@ -1834,14 +1828,14 @@ export default function App(){
                   </div>
                   <div className="v-body">
                     <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val" style={{color:C.grey}}>₦1,200,000</span></div>
-                    <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦1,800,000</span></div>
+                    <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦2,000,000</span></div>
                     <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">Inclusive</span></div>
                     <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val hi">₦200,000</span></div>
                     <div className="v-row"><span className="v-lbl">Deposit spread</span><span className="v-val">3 months</span></div>
                     <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦40,000 / week</span></div>
-                    <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">40 weeks</span></div>
-                    <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦1,600,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val hi">₦1,800,000</span></div>
+                    <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">45 weeks</span></div>
+                    <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦1,800,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val hi">₦2,000,000</span></div>
                     <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
                       <div style={{fontSize:11,fontWeight:700,color:C.orange,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider Referral Bonuses</div>
                       <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 off your HP</span></div>
@@ -1928,14 +1922,14 @@ export default function App(){
                   </div>
                   <div className="v-body">
                     <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val" style={{color:C.grey}}>₦7,000,000</span></div>
-                    <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦11,200,000</span></div>
+                    <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦12,500,000</span></div>
                     <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">Inclusive</span></div>
                     <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val hi" style={{color:"#6366F1"}}>₦800,000</span></div>
                     <div className="v-row"><span className="v-lbl">Deposit spread</span><span className="v-val">3 months</span></div>
-                    <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦100,000 / week</span></div>
-                    <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">104 weeks</span></div>
-                    <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦10,400,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:"#6366F1",fontSize:16}}>₦11,200,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦90,000 / week</span></div>
+                    <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">130 weeks</span></div>
+                    <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦11,700,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:"#6366F1",fontSize:16}}>₦12,500,000</span></div>
                     <div style={{borderTop:"1.5px solid #C7D2FE",margin:"10px 0 6px",paddingTop:8}}>
                       <div style={{fontSize:11,fontWeight:700,color:"#4338CA",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider Referral Bonuses</div>
                       <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#3730A3"}}>₦100,000 off your HP</span></div>
@@ -1975,14 +1969,14 @@ export default function App(){
                   </div>
                   <div className="v-body">
                     <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val" style={{color:C.grey}}>₦10,000,000</span></div>
-                    <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦15,950,000</span></div>
+                    <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦19,240,000</span></div>
                     <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">Inclusive</span></div>
                     <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val hi" style={{color:"#DC2626"}}>₦1,000,000</span></div>
                     <div className="v-row"><span className="v-lbl">Deposit spread</span><span className="v-val">3 months</span></div>
-                    <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦115,000 / week</span></div>
-                    <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">130 weeks</span></div>
-                    <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦14,950,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:"#DC2626",fontSize:16}}>₦15,950,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦120,000 / week</span></div>
+                    <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">152 weeks</span></div>
+                    <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦18,240,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:"#DC2626",fontSize:16}}>₦19,240,000</span></div>
                     <div style={{borderTop:"1.5px solid #FECACA",margin:"10px 0 6px",paddingTop:8}}>
                       <div style={{fontSize:11,fontWeight:700,color:"#DC2626",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider Referral Bonuses</div>
                       <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#991B1B"}}>₦100,000 off your HP</span></div>
@@ -1990,7 +1984,7 @@ export default function App(){
                       <div className="v-row"><span className="v-lbl">Refer a Minibus rider</span><span className="v-val" style={{color:"#991B1B"}}>₦250,000 off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab rider</span><span className="v-val" style={{color:"#991B1B"}}>₦300,000 off your HP</span></div>
                       <div style={{background:"#FEF2F2",border:"1.5px solid #FECACA",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#991B1B",lineHeight:1.6}}>
-                        Each confirmed referral reduces your outstanding balance — same ₦115,000/week, fewer weeks. No limit on referrals.
+                        Each confirmed referral reduces your outstanding balance — same ₦120,000/week, fewer weeks. No limit on referrals.
                       </div>
                     </div>
                     <div style={{borderTop:"1.5px solid #FECACA",margin:"10px 0 6px",paddingTop:8}}>
@@ -2102,7 +2096,7 @@ export default function App(){
                   <div className="earn-row"><span className="earn-lbl">❌ Below 50% of target</span><span className="earn-val" style={{color:"#F87171"}}>0% — no commission</span></div>
                   <div style={{marginTop:10,background:"#0F2027",borderRadius:6,padding:"10px 12px",fontSize:11,color:"#94A3B8",lineHeight:1.8}}>
                     <strong style={{color:C.white}}>Example — Keke rider (₦90,000/week target):</strong><br/>
-                    Pays ₦90,000 → LMA earns <strong style={{color:"#4ADE80"}}>₦5,400</strong><br/>
+                    Pays ₦90,000 → LMA earns <strong style={{color:"#4ADE80"}}>₦9,000</strong><br/>
                     Pays ₦50,000 → LMA earns <strong style={{color:"#FCD34D"}}>₦2,500</strong><br/>
                     Pays ₦40,000 → LMA earns <strong style={{color:"#F87171"}}>₦0</strong>
                   </div>
@@ -2160,7 +2154,7 @@ export default function App(){
 
                 <div style={{color:C.orange,fontWeight:700,marginBottom:4,fontSize:12}}>A. Weekly Commission (Remittance)</div>
                 1. Commission is calculated as a percentage of the amount actually remitted by the rider each week, on a three-tier scale:<br/>
-                &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Full remittance (100% of weekly target)</strong> → LMA earns <strong style={{color:"#4ADE80"}}>6%</strong> of the amount paid.<br/>
+                &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Full remittance (100% of weekly target)</strong> → LMA earns <strong style={{color:"#4ADE80"}}>10%</strong> of the amount paid.<br/>
                 &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Shortfall (50% to 99% of weekly target)</strong> → LMA earns <strong style={{color:"#FCD34D"}}>5%</strong> of the amount paid.<br/>
                 &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Below 50% of weekly target</strong> → LMA earns <strong style={{color:"#F87171"}}>0%</strong> — no commission for that week.<br/>
                 2. The percentage is applied to what the rider actually paid, not the weekly target amount.<br/>
@@ -2221,7 +2215,7 @@ export default function App(){
                   <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🏍️ Dispatch Bike</div>
                   <div className="v-row"><span className="v-lbl">Rider deposit</span><span className="v-val">₦200,000</span></div>
                   <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦40,000 / week</span></div>
-                  <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">40 weeks</span></div>
+                  <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">45 weeks</span></div>
                 </div>
                 <div style={{background:C.white,borderRadius:8,padding:20,border:"1.5px solid #BFDBFE"}}>
                   <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🛺 Keke Tricycle</div>
@@ -2232,14 +2226,14 @@ export default function App(){
                 <div style={{background:C.white,borderRadius:8,padding:20,border:"1.5px solid #BFDBFE"}}>
                   <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🚗 Mini (Korope)</div>
                   <div className="v-row"><span className="v-lbl">Rider deposit</span><span className="v-val">₦800,000</span></div>
-                  <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦100,000 / week</span></div>
-                  <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">104 weeks</span></div>
+                  <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦90,000 / week</span></div>
+                  <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">130 weeks</span></div>
                 </div>
                 <div style={{background:C.white,borderRadius:8,padding:20,border:"1.5px solid #BFDBFE"}}>
                   <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🚌 Full Bus / Cab</div>
                   <div className="v-row"><span className="v-lbl">Rider deposit</span><span className="v-val">₦1,000,000</span></div>
-                  <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦115,000 / week</span></div>
-                  <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">130 weeks</span></div>
+                  <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦120,000 / week</span></div>
+                  <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">152 weeks</span></div>
                 </div>
               </div>
               <div style={{marginTop:16,fontSize:13,color:C.grey,lineHeight:1.8}}>
@@ -2303,12 +2297,12 @@ export default function App(){
                   </div>
                   <div className="inv-body">
                     <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦1,200,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">40 weeks</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦35,000 / week</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit">₦1,400,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit">₦200,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">45 weeks</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦32,000 / week</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit">₦1,440,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit">₦240,000</span></div>
                     <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#1E40AF",lineHeight:1.7}}>
-                      ₦35,000 × 40 weeks pooled monthly to your account. Zero operations on your end.
+                      ₦32,000 × 45 weeks pooled monthly to your account. Zero operations on your end.
                     </div>
                     <button className="btn btn-full" style={{background:C.blue,color:C.white,marginTop:14}} onClick={()=>setModal("invest-bike")}>Invest — Two Wheels</button>
                   </div>
@@ -2322,13 +2316,13 @@ export default function App(){
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,textTransform:"uppercase"}}>Keke Tricycle</div>
                   </div>
                   <div className="inv-body">
-                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦4,350,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦4,000,000</span></div>
                     <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">78 weeks</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦75,000 / week</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit" style={{color:C.green}}>₦5,850,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit" style={{color:C.green}}>₦1,500,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦65,000 / week</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit" style={{color:C.green}}>₦5,070,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit" style={{color:C.green}}>₦1,070,000</span></div>
                     <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#166534",lineHeight:1.7}}>
-                      ₦75,000 × 78 weeks pooled monthly to your account. Zero operations on your end.
+                      ₦65,000 × 78 weeks pooled monthly to your account. Zero operations on your end.
                     </div>
                     <button className="btn btn-full" style={{background:C.green,color:C.white,marginTop:14}} onClick={()=>setModal("invest-keke")}>Invest — Three Wheels</button>
                   </div>
@@ -2342,13 +2336,13 @@ export default function App(){
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,textTransform:"uppercase"}}>Korope Minibus</div>
                   </div>
                   <div className="inv-body">
-                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦7,036,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">104 weeks</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦84,000 / week</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit" style={{color:"#6366F1"}}>₦8,736,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit" style={{color:"#6366F1"}}>₦1,700,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦7,000,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">130 weeks</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦65,000 / week</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit" style={{color:"#6366F1"}}>₦8,450,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit" style={{color:"#6366F1"}}>₦1,450,000</span></div>
                     <div style={{background:"#EEF2FF",border:"1.5px solid #C7D2FE",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#3730A3",lineHeight:1.7}}>
-                      ₦84,000 × 104 weeks pooled monthly to your account. Managed end-to-end by RoyalTech.
+                      ₦65,000 × 130 weeks pooled monthly to your account. Managed end-to-end by RoyalTech.
                     </div>
                     <button className="btn btn-full" style={{background:"#4338CA",color:C.white,marginTop:14}} onClick={()=>setModal("invest-mini")}>Invest — Four Wheels Mini</button>
                   </div>
@@ -2362,13 +2356,13 @@ export default function App(){
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,textTransform:"uppercase"}}>Hiace Bus / Cab Ride</div>
                   </div>
                   <div className="inv-body">
-                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦10,000,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">130 weeks</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦95,000 / week</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit" style={{color:"#DC2626"}}>₦12,350,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit" style={{color:"#DC2626"}}>₦2,350,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦10,500,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">152 weeks</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦90,000 / week</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit" style={{color:"#DC2626"}}>₦13,680,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit" style={{color:"#DC2626"}}>₦3,180,000</span></div>
                     <div style={{background:"#FEF2F2",border:"1.5px solid #FECACA",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#991B1B",lineHeight:1.7}}>
-                      ₦95,000 × 130 weeks pooled monthly to your account. Managed end-to-end by RoyalTech.
+                      ₦90,000 × 152 weeks pooled monthly to your account. Managed end-to-end by RoyalTech.
                     </div>
                     <button className="btn btn-full" style={{background:"#B91C1C",color:C.white,marginTop:14}} onClick={()=>setModal("invest-full")}>Invest — Full Bus / Cab</button>
                   </div>
@@ -2436,7 +2430,7 @@ export default function App(){
             {modal==="rider-bike"&&(
               <>
                 <div className="modal-h cd">🏍️ Bike Application</div>
-                <div className="modal-s">Dispatch Bike — ₦200,000 deposit · ₦40,000/week × 40 weeks<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Dispatch Bike — ₦200,000 deposit · ₦40,000/week × 45 weeks<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
@@ -2522,7 +2516,7 @@ export default function App(){
             {modal==="rider-mini"&&(
               <>
                 <div className="modal-h cd">🚗 Mini Korope Application</div>
-                <div className="modal-s">Clean Tokunbo Korope — ₦800,000 deposit · ₦100,000/week × 104 weeks<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Clean Tokunbo Korope — ₦800,000 deposit · ₦90,000/week × 130 weeks<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
@@ -2562,7 +2556,7 @@ export default function App(){
             {modal==="rider-full"&&(
               <>
                 <div className="modal-h cd">🚌 Full Bus / Cab Application</div>
-                <div className="modal-s">Full Hiace Bus or Cab Ride — ₦1,000,000 deposit · ₦115,000/week × 130 weeks<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Full Hiace Bus or Cab Ride — ₦1,000,000 deposit · ₦120,000/week × 152 weeks<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
@@ -2646,7 +2640,7 @@ export default function App(){
             {modal==="invest-bike"&&(
               <>
                 <div className="modal-h cd">🏍️ Two Wheels Investment</div>
-                <div className="modal-s">Invest ₦1,200,000 · Receive ₦1,400,000 over 40 weeks · Net profit ₦200,000<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Invest ₦1,200,000 · Receive ₦1,440,000 over 45 weeks · Net profit ₦240,000<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
@@ -2671,7 +2665,7 @@ export default function App(){
             {modal==="invest-keke"&&(
               <>
                 <div className="modal-h cd">🛺 Three Wheels Investment</div>
-                <div className="modal-s">Invest ₦4,350,000 · Receive ₦5,850,000 over 78 weeks · Net profit ₦1,500,000<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Invest ₦4,000,000 · Receive ₦5,070,000 over 78 weeks · Net profit ₦1,070,000<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
@@ -2696,7 +2690,7 @@ export default function App(){
             {modal==="invest-mini"&&(
               <>
                 <div className="modal-h cd">🚗 Four Wheels Mini Investment</div>
-                <div className="modal-s">Invest ₦7,036,000 · Receive ₦8,736,000 over 104 weeks · Net profit ₦1,700,000<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Invest ₦7,000,000 · Receive ₦8,450,000 over 130 weeks · Net profit ₦1,450,000<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
@@ -2721,7 +2715,7 @@ export default function App(){
             {modal==="invest-full"&&(
               <>
                 <div className="modal-h cd">🚌 Four Wheels Full Investment</div>
-                <div className="modal-s">Invest ₦10,000,000 · Receive ₦12,350,000 over 130 weeks · Net profit ₦2,350,000<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Invest ₦10,500,000 · Receive ₦13,680,000 over 152 weeks · Net profit ₦3,180,000<br/>RoyalTech will contact you within 24 hours.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
