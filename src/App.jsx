@@ -1846,21 +1846,6 @@ export default function App(){
                         Each confirmed referral reduces your outstanding balance — same ₦40,000/week, fewer weeks. No limit on referrals.
                       </div>
                     </div>
-                    <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
-                      <div style={{fontSize:11,fontWeight:700,color:C.blue,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🤝 LMA Referral Bonuses</div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Bike applicant</span><span className="v-val" style={{color:C.blue}}>₦100,000 cash</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Keke applicant</span><span className="v-val" style={{color:C.blue}}>₦200,000 cash</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Minibus applicant</span><span className="v-val" style={{color:C.blue}}>₦250,000 cash</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Full Bus applicant</span><span className="v-val" style={{color:C.blue}}>₦300,000 cash</span></div>
-                      <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#1e40af",lineHeight:1.6}}>
-                        <strong>LMA Referral T&amp;Cs:</strong><br/>
-                        1. Bonus is paid <em>only</em> after the referred applicant takes delivery of their vehicle and makes their first weekly remittance.<br/>
-                        2. If the referred applicant withdraws before delivery, the bonus is forfeited and reversed if already advanced.<br/>
-                        3. The referring LMA must have at least one active rider under management at time of payout.<br/>
-                        4. The referred applicant must not already be registered under another LMA on the platform.<br/>
-                        5. LMA remains co-guarantor for the referred rider for the first 12 weeks of their HP term.
-                      </div>
-                    </div>
                     <button className="btn btn-orange btn-full" onClick={()=>setModal("rider-bike")}>Apply for This Bike</button>
                   </div>
                 </div>
@@ -1893,21 +1878,6 @@ export default function App(){
                         Each confirmed referral reduces your outstanding balance — same ₦90,000/week, fewer weeks. No limit on referrals.
                       </div>
                     </div>
-                    <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
-                      <div style={{fontSize:11,fontWeight:700,color:C.blue,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🤝 LMA Referral Bonuses</div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Bike applicant</span><span className="v-val" style={{color:C.blue}}>₦100,000 cash</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Keke applicant</span><span className="v-val" style={{color:C.blue}}>₦200,000 cash</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Minibus applicant</span><span className="v-val" style={{color:C.blue}}>₦250,000 cash</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Full Bus applicant</span><span className="v-val" style={{color:C.blue}}>₦300,000 cash</span></div>
-                      <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#1e40af",lineHeight:1.6}}>
-                        <strong>LMA Referral T&amp;Cs:</strong><br/>
-                        1. Bonus is paid <em>only</em> after the referred applicant takes delivery of their vehicle and makes their first weekly remittance.<br/>
-                        2. If the referred applicant withdraws before delivery, the bonus is forfeited and reversed if already advanced.<br/>
-                        3. The referring LMA must have at least one active rider under management at time of payout.<br/>
-                        4. The referred applicant must not already be registered under another LMA on the platform.<br/>
-                        5. LMA remains co-guarantor for the referred rider for the first 12 weeks of their HP term.
-                      </div>
-                    </div>
                     <button className="btn btn-full" style={{background:C.green,color:C.white,marginTop:12}} onClick={()=>setModal("rider-keke")}>Apply for This Keke</button>
                   </div>
                 </div>
@@ -1937,22 +1907,7 @@ export default function App(){
                       <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#3730A3"}}>₦200,000 off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#3730A3"}}>₦250,000 off your HP</span></div>
                       <div style={{background:"#EEF2FF",border:"1.5px solid #C7D2FE",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#3730A3",lineHeight:1.6}}>
-                        Each confirmed referral reduces your outstanding balance — same ₦100,000/week, fewer weeks. No limit on referrals.
-                      </div>
-                    </div>
-                    <div style={{borderTop:"1.5px solid #C7D2FE",margin:"10px 0 6px",paddingTop:8}}>
-                      <div style={{fontSize:11,fontWeight:700,color:C.blue,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🤝 LMA Referral Bonuses</div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Bike applicant</span><span className="v-val" style={{color:C.blue}}>₦100,000 cash</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Keke applicant</span><span className="v-val" style={{color:C.blue}}>₦200,000 cash</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Minibus applicant</span><span className="v-val" style={{color:C.blue}}>₦250,000 cash</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Full Bus applicant</span><span className="v-val" style={{color:C.blue}}>₦300,000 cash</span></div>
-                      <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#1e40af",lineHeight:1.6}}>
-                        <strong>LMA Referral T&amp;Cs:</strong><br/>
-                        1. Bonus is paid <em>only</em> after the referred applicant takes delivery of their vehicle and makes their first weekly remittance.<br/>
-                        2. If the referred applicant withdraws before delivery, the bonus is forfeited and reversed if already advanced.<br/>
-                        3. The referring LMA must have at least one active rider under management at time of payout.<br/>
-                        4. The referred applicant must not already be registered under another LMA on the platform.<br/>
-                        5. LMA remains co-guarantor for the referred rider for the first 12 weeks of their HP term.
+                        Each confirmed referral reduces your outstanding balance — same ₦90,000/week, fewer weeks. No limit on referrals.
                       </div>
                     </div>
                     <button className="btn btn-full" style={{background:"#4338CA",color:C.white,marginTop:12}} onClick={()=>setModal("rider-mini")}>Apply for Minibus (Korope)</button>
@@ -1985,21 +1940,6 @@ export default function App(){
                       <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#991B1B"}}>₦250,000 off your HP</span></div>
                       <div style={{background:"#FEF2F2",border:"1.5px solid #FECACA",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#991B1B",lineHeight:1.6}}>
                         Each confirmed referral reduces your outstanding balance — same ₦120,000/week, fewer weeks. No limit on referrals.
-                      </div>
-                    </div>
-                    <div style={{borderTop:"1.5px solid #FECACA",margin:"10px 0 6px",paddingTop:8}}>
-                      <div style={{fontSize:11,fontWeight:700,color:C.blue,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🤝 LMA Referral Bonuses</div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Bike applicant</span><span className="v-val" style={{color:C.blue}}>₦100,000 cash</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Keke applicant</span><span className="v-val" style={{color:C.blue}}>₦200,000 cash</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Minibus applicant</span><span className="v-val" style={{color:C.blue}}>₦250,000 cash</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a committed Full Bus applicant</span><span className="v-val" style={{color:C.blue}}>₦300,000 cash</span></div>
-                      <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#1e40af",lineHeight:1.6}}>
-                        <strong>LMA Referral T&amp;Cs:</strong><br/>
-                        1. Bonus is paid <em>only</em> after the referred applicant takes delivery of their vehicle and makes their first weekly remittance.<br/>
-                        2. If the referred applicant withdraws before delivery, the bonus is forfeited and reversed if already advanced.<br/>
-                        3. The referring LMA must have at least one active rider under management at time of payout.<br/>
-                        4. The referred applicant must not already be registered under another LMA on the platform.<br/>
-                        5. LMA remains co-guarantor for the referred rider for the first 12 weeks of their HP term.
                       </div>
                     </div>
                     <button className="btn btn-full" style={{background:"#B91C1C",color:C.white,marginTop:12}} onClick={()=>setModal("rider-full")}>Apply for Full Bus / Cab</button>
