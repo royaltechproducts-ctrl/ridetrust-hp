@@ -1837,11 +1837,11 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦1,800,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val hi">₦2,000,000</span></div>
                     <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
-                      <div style={{fontSize:11,fontWeight:700,color:C.orange,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Bonuses</div>
-                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦50,000 off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦150,000 off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 off your HP</span></div>
+                      <div style={{fontSize:11,fontWeight:700,color:C.orange,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Discounts</div>
+                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦50,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦150,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 discount off your HP</span></div>
                       <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#166534",lineHeight:1.6}}>
                         Each confirmed referral reduces your outstanding balance — same ₦40,000/week, fewer weeks. No limit on referrals.
                       </div>
@@ -1869,11 +1869,11 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦7,020,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:C.green,fontSize:16}}>₦7,620,000</span></div>
                     <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
-                      <div style={{fontSize:11,fontWeight:700,color:C.green,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Bonuses</div>
-                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦50,000 off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦150,000 off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 off your HP</span></div>
+                      <div style={{fontSize:11,fontWeight:700,color:C.green,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Discounts</div>
+                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦50,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦150,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 discount off your HP</span></div>
                       <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#166534",lineHeight:1.6}}>
                         Each confirmed referral reduces your outstanding balance — same ₦90,000/week, fewer weeks. No limit on referrals.
                       </div>
@@ -1901,11 +1901,11 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦11,700,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:"#6366F1",fontSize:16}}>₦12,500,000</span></div>
                     <div style={{borderTop:"1.5px solid #C7D2FE",margin:"10px 0 6px",paddingTop:8}}>
-                      <div style={{fontSize:11,fontWeight:700,color:"#4338CA",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Bonuses</div>
-                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#3730A3"}}>₦50,000 off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#3730A3"}}>₦150,000 off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#3730A3"}}>₦200,000 off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#3730A3"}}>₦250,000 off your HP</span></div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#4338CA",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Discounts</div>
+                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#3730A3"}}>₦50,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#3730A3"}}>₦150,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#3730A3"}}>₦200,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#3730A3"}}>₦250,000 discount off your HP</span></div>
                       <div style={{background:"#EEF2FF",border:"1.5px solid #C7D2FE",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#3730A3",lineHeight:1.6}}>
                         Each confirmed referral reduces your outstanding balance — same ₦90,000/week, fewer weeks. No limit on referrals.
                       </div>
@@ -1933,11 +1933,11 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦18,240,000</span></div>
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:"#DC2626",fontSize:16}}>₦19,240,000</span></div>
                     <div style={{borderTop:"1.5px solid #FECACA",margin:"10px 0 6px",paddingTop:8}}>
-                      <div style={{fontSize:11,fontWeight:700,color:"#DC2626",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Bonuses</div>
-                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#991B1B"}}>₦50,000 off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#991B1B"}}>₦150,000 off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#991B1B"}}>₦200,000 off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#991B1B"}}>₦250,000 off your HP</span></div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#DC2626",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Discounts</div>
+                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#991B1B"}}>₦50,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#991B1B"}}>₦150,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#991B1B"}}>₦200,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#991B1B"}}>₦250,000 discount off your HP</span></div>
                       <div style={{background:"#FEF2F2",border:"1.5px solid #FECACA",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#991B1B",lineHeight:1.6}}>
                         Each confirmed referral reduces your outstanding balance — same ₦120,000/week, fewer weeks. No limit on referrals.
                       </div>
