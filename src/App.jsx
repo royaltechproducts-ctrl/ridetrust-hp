@@ -2225,8 +2225,8 @@ export default function App(){
           <div style={{background:C.blue,padding:"72px 24px 60px",textAlign:"center",color:C.white}}>
             <div className="hero-eyebrow" style={{background:C.white,color:C.blue}}>RoyalTech Partnership & Investment Limited</div>
             <h1 className="hero-h1 cd">Local Managing<br/><span style={{color:"#93C5FD"}}>Agent Requirement</span></h1>
-            <div className="hero-sub" style={{color:"#BFDBFE"}}>Keke/Commercial Tricycles & Dispatch Bikes</div>
-            <p style={{fontSize:15,color:"#BFDBFE",maxWidth:520,margin:"0 auto 36px",lineHeight:1.8}}>Manage riders in your area. Earn weekly commissions from every vehicle under your management — plus referral bonuses for every new rider you bring in.</p>
+            <div className="hero-sub" style={{color:"#BFDBFE"}}>Dispatch Bikes · Keke Tricycles · Minibuses · Full Buses & Cabs</div>
+            <p style={{fontSize:15,color:"#BFDBFE",maxWidth:520,margin:"0 auto 36px",lineHeight:1.8}}>Manage riders and drivers in your area. Earn weekly commissions from every vehicle under your management — plus referral bonuses for every new rider or driver you bring in, and quarterly performance bonuses.</p>
             <button className="btn" style={{background:C.white,color:C.blue}} onClick={()=>setModal("lma")}>Apply as Managing Agent</button>
           </div>
 
@@ -2360,7 +2360,7 @@ export default function App(){
               <div className="sec-lbl" style={{color:C.blue}}>The Product You Will Manage</div>
               <h2 className="sec-h2">Understanding the Hire Purchase Deals</h2>
               <div className="divider" style={{background:C.blue}}/>
-              <p className="sec-body">As a Managing Agent, you need to understand what your riders are on. Here are the exact hire purchase terms for both vehicle types.</p>
+              <p className="sec-body">As a Managing Agent, you need to understand what your riders and drivers are on. Here are the exact hire purchase terms for all four vehicle types.</p>
               <div className="v-grid" style={{marginTop:24}}>
                 <div style={{background:C.white,borderRadius:8,padding:20,border:"1.5px solid #BFDBFE"}}>
                   <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🏍️ Dispatch Bike</div>
@@ -2375,20 +2375,20 @@ export default function App(){
                   <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">78 weeks</span></div>
                 </div>
                 <div style={{background:C.white,borderRadius:8,padding:20,border:"1.5px solid #BFDBFE"}}>
-                  <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🚗 Mini (Korope)</div>
-                  <div className="v-row"><span className="v-lbl">Rider deposit</span><span className="v-val">₦800,000</span></div>
+                  <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🚐 Minibus (Korope)</div>
+                  <div className="v-row"><span className="v-lbl">Driver deposit</span><span className="v-val">₦800,000</span></div>
                   <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦90,000 / week</span></div>
                   <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">130 weeks</span></div>
                 </div>
                 <div style={{background:C.white,borderRadius:8,padding:20,border:"1.5px solid #BFDBFE"}}>
                   <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🚌 Full Bus / Cab</div>
-                  <div className="v-row"><span className="v-lbl">Rider deposit</span><span className="v-val">₦1,000,000</span></div>
+                  <div className="v-row"><span className="v-lbl">Driver deposit</span><span className="v-val">₦1,000,000</span></div>
                   <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦120,000 / week</span></div>
                   <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">152 weeks</span></div>
                 </div>
               </div>
               <div style={{marginTop:16,fontSize:13,color:C.grey,lineHeight:1.8}}>
-                Riders make weekly remittances directly to RoyalTech and submit proof of payment to you for financial update. You track compliance and report to RoyalTech.
+                Riders and drivers make weekly remittances directly to RoyalTech and submit proof of payment to you for verification. You track compliance across your full portfolio and report to RoyalTech.
               </div>
               <div style={{marginTop:16}}>
                 <button className="btn btn-outline" style={{color:C.blue,borderColor:C.blue,fontSize:13}} onClick={()=>navigate("ride")}>View Full Rider Information →</button>
@@ -2400,7 +2400,7 @@ export default function App(){
 
           <div className="cta-strip" style={{background:C.blue}}>
             <h2 className="cta-h cd">Ready to Become a Managing Agent?</h2>
-            <p className="cta-s">Free application. Weekly commissions. Referral bonuses. No limits.</p>
+            <p className="cta-s">Free application. Weekly commissions. Referral bonuses. Quarterly performance bonus. No limits.</p>
             <div className="cta-btns">
               <button className="btn btn-white" style={{color:C.blue}} onClick={()=>setModal("lma")}>Apply Now — Free</button>
             </div>
