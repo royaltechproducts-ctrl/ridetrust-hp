@@ -2129,10 +2129,12 @@ export default function App(){
             <div className="hero-eyebrow" style={{background:C.orange,color:C.white}}>RoyalTech Partnership & Investment Limited</div>
             <h1 className="hero-h1 cd" style={{color:C.white}}>Ride To <span style={{color:C.orange}}>Own</span></h1>
             <div className="hero-sub" style={{color:"#CCC"}}>Best Hire Purchase Ever</div>
-            <p style={{fontSize:15,color:"#AAA",maxWidth:520,margin:"0 auto 36px",lineHeight:1.8}}>Brand new bike or keke. Fixed deposit. Weekly payments. Full ownership at the end. No bank. No wahala.</p>
+            <p style={{fontSize:15,color:"#AAA",maxWidth:520,margin:"0 auto 36px",lineHeight:1.8}}>Brand new bike, keke, korope or bus. Fixed deposit. Weekly payments. Full ownership at the end. No bank. No wahala.</p>
             <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
               <button className="btn btn-orange" onClick={()=>openModal("rider-bike")}>🏍️ Apply for Bike</button>
               <button className="btn" style={{background:"#1A1A1A",color:C.white,border:"1.5px solid #333"}} onClick={()=>openModal("rider-keke")}>🛺 Apply for Keke</button>
+              <button className="btn" style={{background:"#4338CA",color:C.white}} onClick={()=>openModal("rider-mini")}>🚗 Apply for Mini Korope</button>
+              <button className="btn" style={{background:"#991B1B",color:C.white}} onClick={()=>openModal("rider-full")}>🚌 Apply for Hiace Bus / Cab</button>
             </div>
           </div>
 
@@ -2322,6 +2324,8 @@ export default function App(){
             <div className="cta-btns">
               <button className="btn btn-white" onClick={()=>openModal("rider-bike")}>🏍️ Apply for Bike</button>
               <button className="btn btn-black" onClick={()=>openModal("rider-keke")}>🛺 Apply for Keke</button>
+              <button className="btn" style={{background:"#4338CA",color:C.white}} onClick={()=>openModal("rider-mini")}>🚗 Apply for Mini Korope</button>
+              <button className="btn" style={{background:"#991B1B",color:C.white}} onClick={()=>openModal("rider-full")}>🚌 Apply for Hiace Bus / Cab</button>
             </div>
           </div>
           <Footer/>
