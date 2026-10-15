@@ -2431,9 +2431,9 @@ export default function App(){
           <div style={{background:"#1E1B4B",padding:"72px 24px 60px",textAlign:"center",color:C.white}}>
             <div className="hero-eyebrow" style={{background:"#C4B5FD",color:"#1E1B4B"}}>RoyalTech Partnership & Investment Limited</div>
             <h1 className="hero-h1 cd">Route Captain<br/><span style={{color:"#A78BFA"}}>& Commander</span></h1>
-            <div className="hero-sub" style={{color:"#C4B5FD"}}>Already plying the route? Already own a vehicle? Step up as a Route Captain and earn commission on every rider or driver you manage for us. Build your fleet. Graduate to Route Commander. The road is your office — and now it pays double.</div>
+            <div className="hero-sub" style={{color:"#C4B5FD"}}>Fleet Managers on wheels — monitoring, motivating, and protecting the RideTrust fleet on the road</div>
             <p style={{fontSize:15,color:"#A5B4FC",maxWidth:560,margin:"0 auto 28px",lineHeight:1.8}}>
-              Already plying the route? Already own a vehicle? Step up as a Route Captain and earn commission on every rider or driver you manage. Build your fleet. Graduate to Route Commander. The road is your office — and now it pays double.
+              Already plying the route? Already own a vehicle? Step up as a Route Captain and earn commission on every rider or driver you manage for us. Build your fleet. Graduate to Route Commander. The road is your office — and now it pays double.
             </p>
             {/* Tier cards */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,maxWidth:500,margin:"0 auto 36px",textAlign:"left"}}>
