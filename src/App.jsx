@@ -231,7 +231,7 @@ function Footer(){
 
 // ── Referral URL helpers ──────────────────────────────────────
 const BASE_URL = "https://ridetrust.com.ng";
-const DEST_MAP = { riders:"ride", lma:"agent", investors:"invest" };
+const DEST_MAP = { riders:"ride", lma:"captain", agent:"captain", investors:"invest" };
 
 const parseReferral = () => {
   const params = new URLSearchParams(window.location.search);
@@ -260,7 +260,11 @@ export default function App(){
     if(dest && DEST_MAP[dest]) return DEST_MAP[dest];
     const h = window.location.hash.replace(/^#\/?/,"").toLowerCase();
     const p = window.location.pathname.replace(/\//g,"").toLowerCase();
-    return ["ride","agent","invest"].includes(h) ? h : ["ride","agent","invest"].includes(p) ? p : "access";
+    const valid = ["ride","captain","invest","agent"];
+    const mapped = {agent:"captain"};
+    const hv = valid.includes(h) ? (mapped[h]||h) : null;
+    const pv = valid.includes(p) ? (mapped[p]||p) : null;
+    return hv || pv || "access";
   };
   const [page, setPage] = useState(getPage());
   // Listen for hash changes (back/forward button)
@@ -274,11 +278,11 @@ export default function App(){
   const [adminOn,   setAdminOn]   = useState(false);
   const [adminTab,  setAdminTab]  = useState("riders");
   const [riders,    setRiders]    = useState([]);
-  const [agents,    setAgents]    = useState([]);
+  const [captains,  setCaptains]  = useState([]);
   const [investors, setInvestors] = useState([]);
   const [buckets,   setBuckets]   = useState({});
   const [remittances, setRemittances] = useState([]);
-  const [remitForm, setRemitForm] = useState({rider_id:"",amount:"",week_number:"",has_lma:true,notes:""});
+  const [remitForm, setRemitForm] = useState({rider_id:"",amount:"",week_number:"",notes:""});
   const [loading,   setLoading]   = useState(false);
   const [ga4,       setGa4]       = useState(null);
   const [ga4Err,    setGa4Err]    = useState(null);
@@ -342,7 +346,7 @@ export default function App(){
       sb.from("rt_remittances").select("*,rt_riders(full_name,vehicle_type)").order("created_at",{ascending:false}).limit(50),
     ]);
     if(r.data) setRiders(r.data);
-    if(a.data) setAgents(a.data);
+    if(a.data) setCaptains(a.data);
     if(i.data) setInvestors(i.data);
     if(b.data){ const bMap={}; b.data.forEach(x=>bMap[x.bucket_name]=x); setBuckets(bMap); }
     if(rem.data) setRemittances(rem.data);
@@ -377,76 +381,89 @@ export default function App(){
   };
 
   // Record a remittance and split into buckets
+  // ── Route Captain commission model ──
+  // Agent Bucket always receives 10% of gross (this is the Captain pool).
+  // Captain's accrued_commission is credited at their tier rate (5% or 10%) of gross.
+  // Surplus (10% − tier%) flows from Agent Bucket to Reserve Bucket.
+  // No captain assigned → full 10% from Agent Bucket goes to Reserve Bucket.
+  // Dismissed captain with forfeited commission → surplus accrues to Reserve.
   const recordRemittance = async () => {
     const rider = riders.find(r=>r.id===remitForm.rider_id);
     if(!rider||!remitForm.amount){ showToast("Select rider and enter amount."); return; }
     const amt = Number(remitForm.amount);
     const vt  = rider.vehicle_type;
-    const hasLma = remitForm.has_lma;
-    // Split calculation — 3-rule formula
-    // Rule 1: Investor gets fixed share (highest priority; shortfall absorbed by reserve)
-    // Rule 2: LMA gets 10% of gross weekly remittance
-    // Rule 3: Remainder split 50% RoyalTech / 50% Pool
+    // Determine captain assignment and tier
+    const captain = rider.captain_id ? captains.find(c=>c.id===rider.captain_id) : null;
+    const captainTier = captain?.tier || null; // "captain" (5%) | "commander" (10%) | null
+    const captainRate = captainTier==="commander" ? 0.10 : captainTier==="captain" ? 0.05 : 0;
     const sp = SPLIT[vt] || SPLIT.keke;
-    const expected = sp.weekly;
     if(amt < sp.inv){
       // Severe shortfall: investor gets everything, others get 0
-      const invAmt=amt, agentAmt=0, rtAmt=0, reserveAmt=0;
       await sb.from("rt_remittances").insert({
         rider_id: remitForm.rider_id, vehicle_type: vt,
         week_number: Number(remitForm.week_number)||null,
-        amount_received: amt, investor_share: invAmt, agent_share: agentAmt,
-        royaltech_share: rtAmt, reserve_share: reserveAmt,
-        has_lma: hasLma, status:"short", notes: remitForm.notes||null,
+        amount_received: amt, investor_share: amt, agent_share: 0,
+        royaltech_share: 0, reserve_share: 0,
+        captain_id: captain?.id||null, captain_tier: captainTier,
+        status:"short", notes: remitForm.notes||null,
       });
-      const bUpdates=[{name:"investor_"+vt,add:invAmt}];
-      for(const b of bUpdates){ const cur=buckets[b.name]; if(cur){ await sb.from("rt_buckets").update({balance:(cur.balance||0)+b.add,total_received:(cur.total_received||0)+b.add,updated_at:new Date().toISOString()}).eq("bucket_name",b.name); } }
-      setRemitForm({rider_id:"",amount:"",week_number:"",has_lma:true,notes:""});
+      const cur=buckets["investor_"+vt]; if(cur){ await sb.from("rt_buckets").update({balance:(cur.balance||0)+amt,total_received:(cur.total_received||0)+amt,updated_at:new Date().toISOString()}).eq("bucket_name","investor_"+vt); }
+      setRemitForm({rider_id:"",amount:"",week_number:"",notes:""});
       await loadData();
       showToast("⚠️ Severe shortfall — investor bucket only, others zeroed.");
       return;
     }
     // Normal / partial split
-    const lmaRate  = sp.lma / sp.weekly;                         // Rule 2: rate derived from SPLIT (10% gross, all vehicle types)
-    const invAmt   = sp.inv;                                     // Rule 1: fixed investor amount
-    const agentAmt = hasLma ? Math.round(amt * lmaRate) : 0;    // Rule 2: lmaRate% of gross to LMA
-    const remainder = amt - invAmt - agentAmt;
-    const rtAmt      = Math.round(remainder * 0.50);             // Rule 3: 50% of remainder to RoyalTech
-    const reserveAmt = remainder - rtAmt;                        // Rule 3: 50% of remainder to Pool (exact)
+    // Rule 1: Investor gets fixed share
+    // Rule 2: Agent Bucket always gets 10% of gross
+    // Rule 3: Remainder 50% RoyalTech / 50% Reserve
+    // Captain commission: credited at 5% or 10% of gross from Agent Bucket; surplus → Reserve
+    const invAmt     = sp.inv;
+    const agentBucketAmt = Math.round(amt * 0.10);              // always 10% to Agent Bucket
+    const captainCommission = Math.round(amt * captainRate);    // 5% or 10% credited to captain accrued
+    const agentSurplus = agentBucketAmt - captainCommission;    // surplus from Agent Bucket → Reserve
+    const remainder   = amt - invAmt - agentBucketAmt;
+    const rtAmt       = Math.round(remainder * 0.50);
+    const reserveAmt  = remainder - rtAmt + agentSurplus;       // Reserve gets its 50% + Agent surplus
     // Insert remittance record
     await sb.from("rt_remittances").insert({
-      rider_id: remitForm.rider_id,
-      vehicle_type: vt,
+      rider_id: remitForm.rider_id, vehicle_type: vt,
       week_number: Number(remitForm.week_number)||null,
-      amount_received: amt,
-      investor_share: invAmt,
-      agent_share: agentAmt,
-      royaltech_share: rtAmt,
-      reserve_share: reserveAmt,
-      has_lma: hasLma,
+      amount_received: amt, investor_share: invAmt,
+      agent_share: agentBucketAmt, royaltech_share: rtAmt, reserve_share: reserveAmt,
+      captain_id: captain?.id||null, captain_tier: captainTier,
+      captain_commission: captainCommission,
+      has_lma: !!captain,
       status: amt >= sp.weekly ? "full" : "short",
       notes: remitForm.notes||null,
     });
+    // Credit captain's accrued_commission in rt_agents
+    if(captain && captainCommission > 0){
+      await sb.from("rt_agents").update({
+        accrued_commission: (captain.accrued_commission||0) + captainCommission,
+        fleet_count: captains.filter(c=>c.id===captain.id).length, // re-counted on next loadData
+      }).eq("id", captain.id);
+      // Auto-graduate to commander if fleet_count > 10
+      const captainFleet = riders.filter(r=>r.captain_id===captain.id&&r.rider_status==="active_rider").length;
+      if(captainFleet > 10 && captain.tier !== "commander"){
+        await sb.from("rt_agents").update({tier:"commander", commission_rate:10}).eq("id",captain.id);
+        showToast(`🎖️ ${captain.full_name} auto-graduated to Route Commander (fleet > 10)!`);
+      }
+    }
     // Update bucket balances
     const bUpdates = [
-      {name:"investor_"+vt,   add:invAmt},
-      {name:"agent_"+vt,      add:agentAmt},
-      {name:"royaltech_"+vt,  add:rtAmt},
-      {name:"reserve_"+vt,    add:reserveAmt},
+      {name:"investor_"+vt,  add:invAmt},
+      {name:"agent_"+vt,     add:agentBucketAmt},
+      {name:"royaltech_"+vt, add:rtAmt},
+      {name:"reserve_"+vt,   add:reserveAmt},
     ];
     for(const b of bUpdates){
       const cur = buckets[b.name];
-      if(cur){
-        await sb.from("rt_buckets").update({
-          balance: (cur.balance||0)+b.add,
-          total_received: (cur.total_received||0)+b.add,
-          updated_at: new Date().toISOString(),
-        }).eq("bucket_name",b.name);
-      }
+      if(cur){ await sb.from("rt_buckets").update({balance:(cur.balance||0)+b.add,total_received:(cur.total_received||0)+b.add,updated_at:new Date().toISOString()}).eq("bucket_name",b.name); }
     }
-    setRemitForm({rider_id:"",amount:"",week_number:"",has_lma:true,notes:""});
+    setRemitForm({rider_id:"",amount:"",week_number:"",notes:""});
     await loadData();
-    showToast(amt>=sp.weekly?"Remittance recorded. All buckets updated.":"⚠️ Short remittance recorded. Contingency reserve absorbs investor shortfall next disbursement.");
+    showToast(amt>=sp.weekly?"Remittance recorded. All buckets updated.":"⚠️ Short remittance recorded.");
   };
 
   // Log referral visit on mount if URL carries ref params
@@ -491,13 +508,19 @@ export default function App(){
     }
     const { refType, refId, dest } = parseReferral();
     try {
-      if(type==="lma"){
-        // LMA stage 1: just basic info, save to rt_agents with status "stage1_complete"
+      if(type==="lma"||type==="captain"){
+        // Route Captain stage 1: basic info + declared route
         const { data: newAgent } = await sb.from("rt_agents").insert({
           full_name: form.name, phone: form.phone, email: form.email,
           address: form.address||null,
+          declared_route: form.declaredRoute||null,
           tech_skills: form.techSkills?Number(form.techSkills):null,
           biz_experience: form.bizExp?Number(form.bizExp):null,
+          tier: "captain",
+          commission_rate: 5,
+          accrued_commission: 0,
+          fleet_count: 0,
+          captain_status: "pending",
           ref_type: refType||null, ref_id: refId||null,
           app_status: "stage1_complete",
         }).select().single();
@@ -563,13 +586,12 @@ export default function App(){
 
   const submitStage2 = async type => {
     if(!stage1RiderId){ showToast("Session error. Please start over."); return; }
-    const isLma = type==="lma";
+    const isLma = type==="lma"||type==="captain";
     const isBike = type==="rider-bike";
     try {
       if(isLma){
         await sb.from("rt_agents").update({
-          utility_bill: form.utilityBill||null,
-          parking_photo: form.parkingPhoto||null,
+          vehicle_proof: form.vehicleProof||null,
           photo_id: form.photoId||null,
           app_status: "under_review",
         }).eq("id", stage1RiderId);
@@ -1144,7 +1166,7 @@ export default function App(){
           <div style={{background:C.white,borderBottom:"2px solid "+C.lightgr,padding:"0 24px",display:"flex",gap:4,overflowX:"auto"}}>
             {[
               {k:"riders",   label:"🏍️ Riders ("+riders.length+")"},
-              {k:"agents",   label:"🏢 Agents ("+agents.length+")"},
+              {k:"captains", label:"🎖️ Captains ("+captains.length+")"},
               {k:"investors",label:"💰 Investors ("+investors.length+")"},
               {k:"analytics",label:"📊 Analytics"},
             {k:"remittances",label:"💵 Remittances"},
@@ -1205,37 +1227,40 @@ export default function App(){
                     {r.photo_id&&<div style={{marginBottom:12}}><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Photo ID:</div><img src={r.photo_id} alt="ID" style={{maxWidth:200,maxHeight:120,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
                     {/* LMA Assignment */}
                     <div style={{marginBottom:12,padding:14,background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:8}}>
-                      <div style={{fontWeight:700,fontSize:12,color:C.blue,marginBottom:8}}>🏢 LMA Assignment</div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
-                        <input placeholder="LMA Name" defaultValue={r.lma_name||""} id={"lma-name-"+r.id}
-                          style={{padding:"6px 8px",border:"1px solid #BFDBFE",borderRadius:4,fontSize:12}}/>
-                        <input placeholder="LMA Email" defaultValue={r.lma_email||""} id={"lma-email-"+r.id}
-                          style={{padding:"6px 8px",border:"1px solid #BFDBFE",borderRadius:4,fontSize:12}}/>
-                        <input placeholder="LMA Phone" defaultValue={r.lma_phone||""} id={"lma-phone-"+r.id}
-                          style={{padding:"6px 8px",border:"1px solid #BFDBFE",borderRadius:4,fontSize:12}}/>
-                      </div>
+                      <div style={{fontWeight:700,fontSize:12,color:C.blue,marginBottom:8}}>🎖️ Route Captain Assignment</div>
+                      {/* Captain dropdown from approved captains */}
+                      <select id={"captain-sel-"+r.id} defaultValue={r.captain_id||""}
+                        style={{width:"100%",padding:"7px 10px",border:"1px solid #BFDBFE",borderRadius:4,fontSize:12,marginBottom:8}}>
+                        <option value="">— Assign a Route Captain —</option>
+                        {captains.filter(c=>c.captain_status==="active"||c.status==="approved").map(c=>(
+                          <option key={c.id} value={c.id}>{c.full_name} ({c.tier==="commander"?"Commander 10%":"Captain 5%"}) · {c.declared_route||c.address||"—"}</option>
+                        ))}
+                      </select>
                       <button onClick={()=>confirmUpdate(
-                        `Link ${r.full_name} to LMA and send go-ahead email?`,
+                        `Assign Route Captain to ${r.full_name}?`,
                         async()=>{
-                          const lmaName  = document.getElementById("lma-name-"+r.id)?.value||"";
-                          const lmaEmail = document.getElementById("lma-email-"+r.id)?.value||"";
-                          const lmaPhone = document.getElementById("lma-phone-"+r.id)?.value||"";
+                          const captainId = document.getElementById("captain-sel-"+r.id)?.value||"";
+                          if(!captainId){ showToast("Select a captain first."); return; }
+                          const cap = captains.find(c=>c.id===captainId);
                           await sb.from("rt_riders").update({
-                            lma_name:lmaName, lma_email:lmaEmail, lma_phone:lmaPhone,
-                            rider_status:"lma_linked"
+                            captain_id: captainId,
+                            lma_name: cap?.full_name||"", lma_phone: cap?.phone||"", lma_email: cap?.email||"",
+                            rider_status: "lma_linked",
                           }).eq("id",r.id);
-                          // Admin email with WhatsApp draft
-                          const vType = r.vehicle_type==="bike"?"Dispatch Bike":"Keke Tricycle";
-                          const dep   = {bike:"₦200,000",keke:"₦600,000",mini:"₦800,000",full:"₦1,000,000"}[r.vehicle_type]||"₦600,000";
-                          const waMsg = `Dear ${r.full_name},\n\nYour RideTrust HP application has been reviewed and approved. You have been linked to a Local Managing Agent who will oversee your hire purchase.\n\nYour Managing Agent:\nName: ${lmaName}\nPhone: ${lmaPhone}\nEmail: ${lmaEmail}\n\nYou may now proceed to:\n1. Make your referrals to secure guarantors\n2. Pay your initial deposit of ${dep} (spread over 3 months max)\n\nPayment Details:\nAccount Name: RoyalTech Partnership & Investment Limited\nBank: Zenith Bank\nAccount Number: 1016621205\nReference: ${r.referral_code}\n\nAfter each deposit payment, send proof via WhatsApp to +234 909 999 4816 with your reference code.\n\nRideTrust HP | RoyalTech`;
+                          // Update captain's fleet_count
+                          const newFleetCount = riders.filter(rd=>rd.captain_id===captainId&&rd.id!==r.id).length + 1;
+                          await sb.from("rt_agents").update({fleet_count:newFleetCount}).eq("id",captainId);
+                          const vType = r.vehicle_type==="bike"?"Dispatch Bike":r.vehicle_type==="keke"?"Keke Tricycle":r.vehicle_type==="mini"?"Mini Korope":"Full Bus / Cab";
+                          const dep = {bike:"₦200,000",keke:"₦600,000",mini:"₦800,000",full:"₦1,000,000"}[r.vehicle_type]||"₦600,000";
+                          const waMsg = `Dear ${r.full_name},\n\nYour RideTrust HP application has been reviewed and approved. You have been assigned a Route Captain who will monitor and support you on the road.\n\nYour Route Captain:\nName: ${cap?.full_name||""}\nPhone: ${cap?.phone||""}\nEmail: ${cap?.email||""}\n\nYou may now proceed to:\n1. Make your referrals to secure guarantors\n2. Pay your initial deposit of ${dep} (spread over 3 months max)\n\nPayment Details:\nAccount Name: RoyalTech Partnership & Investment Limited\nBank: Zenith Bank\nAccount Number: 1016621205\nReference: ${r.referral_code}\n\nAfter each deposit payment, send proof via WhatsApp to +234 909 999 4816 with your reference code.\n\nRideTrust HP | RoyalTech`;
                           console.log("ADMIN — SEND THIS WHATSAPP TO "+r.phone+":\n"+waMsg);
                           await loadData();
-                          showToast("LMA linked. Rider status updated to LMA Linked.");
+                          showToast("Route Captain assigned. Rider linked.");
                         }
                       )} style={{background:C.blue,color:C.white,border:"none",padding:"7px 16px",borderRadius:4,fontSize:12,fontWeight:700,cursor:"pointer"}}>
-                        Link LMA & Send Go-Ahead
+                        Assign Captain & Send Go-Ahead
                       </button>
-                      {r.lma_name&&<div style={{marginTop:8,fontSize:11,color:C.blue}}>✅ Currently linked to: <strong>{r.lma_name}</strong> · {r.lma_phone}</div>}
+                      {r.captain_id&&<div style={{marginTop:8,fontSize:11,color:C.blue}}>✅ Assigned to: <strong>{captains.find(c=>c.id===r.captain_id)?.full_name||r.lma_name}</strong> · {captains.find(c=>c.id===r.captain_id)?.phone||r.lma_phone}</div>}
                     </div>
 
                     {/* Deposit confirmation button */}
@@ -1308,44 +1333,110 @@ export default function App(){
               </div>
             )}
 
-            {/* ── Agents tab ── */}
-            {adminTab==="agents"&&!loading&&(
+            {/* ── Captains tab ── */}
+            {adminTab==="captains"&&!loading&&(
               <div>
-                <div style={{fontWeight:800,fontSize:15,color:C.black,marginBottom:16}}>Agent Applications — {agents.length} total</div>
-                {agents.length===0&&<div style={{color:C.grey,fontSize:14}}>No applications yet.</div>}
-                {agents.map(a=>(
+                <div style={{fontWeight:800,fontSize:15,color:C.black,marginBottom:16}}>Route Captains & Commanders — {captains.length} total</div>
+                {captains.length===0&&<div style={{color:C.grey,fontSize:14}}>No applications yet.</div>}
+                {captains.map(a=>(
                   <div key={a.id} style={{background:C.white,borderRadius:10,padding:20,marginBottom:14,border:"1.5px solid "+C.lightgr}}>
                     <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:12}}>
                       <div>
                         <div style={{fontWeight:800,fontSize:15,color:C.black}}>{a.full_name}</div>
                         <div style={{fontSize:12,color:C.grey,marginTop:2}}>{a.email} · {a.phone}</div>
                         <div style={{fontSize:12,color:C.grey}}>{a.address||"—"}</div>
+                        {a.declared_route&&<div style={{fontSize:12,color:C.blue,marginTop:2}}>📍 Route: {a.declared_route}</div>}
                       </div>
-                      <span style={{padding:"4px 10px",borderRadius:20,fontSize:11,fontWeight:700,
-                        background:a.status==="approved"?"#BBF7D0":a.status==="rejected"?"#FEE2E2":"#FEF3C7",
-                        color:a.status==="approved"?"#166534":a.status==="rejected"?"#991B1B":"#92400E"}}>
-                        {a.status}
-                      </span>
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+                        <span style={{padding:"4px 10px",borderRadius:20,fontSize:11,fontWeight:700,
+                          background:a.tier==="commander"?"#EDE9FE":"#EFF6FF",
+                          color:a.tier==="commander"?"#5B21B6":C.blue}}>
+                          {a.tier==="commander"?"🎖️ Commander (10%)":"⭐ Captain (5%)"}
+                        </span>
+                        <span style={{padding:"4px 10px",borderRadius:20,fontSize:11,fontWeight:700,
+                          background:a.status==="approved"||a.captain_status==="active"?"#BBF7D0":a.status==="rejected"?"#FEE2E2":"#FEF3C7",
+                          color:a.status==="approved"||a.captain_status==="active"?"#166534":a.status==="rejected"?"#991B1B":"#92400E"}}>
+                          {a.captain_status||a.status}
+                        </span>
+                      </div>
                     </div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10,marginBottom:12,fontSize:12}}>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10,marginBottom:12,fontSize:12}}>
+                      <div><span style={{color:C.grey}}>Fleet: </span><strong>{a.fleet_count||0} riders</strong></div>
+                      <div><span style={{color:C.grey}}>Accrued commission: </span><strong style={{color:C.green}}>₦{(a.accrued_commission||0).toLocaleString()}</strong></div>
+                      <div><span style={{color:C.grey}}>Rate: </span><strong>{a.commission_rate||5}%</strong></div>
                       <div><span style={{color:C.grey}}>Tech skills: </span><strong>{a.tech_skills||"—"}/5</strong></div>
                       <div><span style={{color:C.grey}}>Transport exp: </span><strong>{a.biz_experience||"—"}/5</strong></div>
                       <div><span style={{color:C.grey}}>Applied: </span><strong>{new Date(a.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})}</strong></div>
                     </div>
+                    {/* Fleet list */}
+                    {riders.filter(r=>r.captain_id===a.id).length>0&&(
+                      <div style={{marginBottom:12,background:"#F8F9FF",borderRadius:8,padding:"10px 14px"}}>
+                        <div style={{fontWeight:700,fontSize:11,color:C.blue,marginBottom:6}}>Fleet ({riders.filter(r=>r.captain_id===a.id).length} assigned)</div>
+                        {riders.filter(r=>r.captain_id===a.id).map(r=>(
+                          <div key={r.id} style={{fontSize:11,color:C.grey,marginBottom:3}}>
+                            {r.vehicle_type==="bike"?"🏍️":r.vehicle_type==="keke"?"🛺":r.vehicle_type==="mini"?"🚗":"🚌"} {r.full_name} · {r.rider_status?.replace(/_/g," ")||"—"}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:12}}>
-                      {a.utility_bill&&<div><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Utility Bill:</div><img src={a.utility_bill} alt="Utility" style={{maxWidth:160,maxHeight:100,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
-                      {a.parking_photo&&<div><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Parking Yard:</div><img src={a.parking_photo} alt="Parking" style={{maxWidth:160,maxHeight:100,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
+                      {a.vehicle_proof&&<div><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Vehicle Proof:</div><img src={a.vehicle_proof} alt="Vehicle" style={{maxWidth:160,maxHeight:100,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
                       {a.photo_id&&<div><div style={{fontSize:11,color:C.grey,marginBottom:4}}>Photo ID:</div><img src={a.photo_id} alt="ID" style={{maxWidth:160,maxHeight:100,borderRadius:6,border:"1px solid "+C.lightgr}}/></div>}
                     </div>
-                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                      {["pending","approved","rejected"].map(s=>(
-                        <button key={s} onClick={()=>confirmUpdate(`Set status to "${s}" for ${a.full_name}?`, ()=>updateStatus('rt_agents',a.id,s))}
-                          style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid "+C.lightgr,
-                          background:a.status===s?C.blue:C.white,color:a.status===s?C.white:C.grey,
-                          fontSize:11,fontWeight:700,cursor:"pointer",textTransform:"capitalize"}}>
-                          {s}
+                    {/* Payout commission */}
+                    {(a.accrued_commission||0)>0&&(
+                      <div style={{marginBottom:12,padding:"10px 14px",background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:8}}>
+                        <div style={{fontWeight:700,fontSize:12,color:C.green,marginBottom:6}}>💳 Monthly Commission Payout</div>
+                        <div style={{fontSize:12,color:C.grey,marginBottom:8}}>Accrued: <strong style={{color:C.green}}>₦{(a.accrued_commission||0).toLocaleString()}</strong></div>
+                        <button onClick={()=>confirmUpdate(`Pay out ₦${(a.accrued_commission||0).toLocaleString()} to ${a.full_name} and reset to ₦0?`, async()=>{
+                          await sb.from("rt_agents").update({accrued_commission:0}).eq("id",a.id);
+                          await loadData(); showToast("Commission paid and reset to ₦0.");
+                        })} style={{background:C.green,color:C.white,border:"none",padding:"6px 14px",borderRadius:4,fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                          ✅ Mark as Paid — Reset to ₦0
                         </button>
-                      ))}
+                      </div>
+                    )}
+                    {/* Dismiss captain (forfeits accrued) */}
+                    <div style={{marginBottom:12}}>
+                      <div style={{fontWeight:700,fontSize:11,color:C.grey,marginBottom:6}}>Captain Status:</div>
+                      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                        {["pending","active","dismissed"].map(s=>(
+                          <button key={s} onClick={()=>confirmUpdate(
+                            s==="dismissed"?`Dismiss ${a.full_name}? Accrued commission of ₦${(a.accrued_commission||0).toLocaleString()} will be forfeited to Reserve Bucket.`:`Set ${a.full_name} to ${s}?`,
+                            async()=>{
+                              const updates = {captain_status:s,status:s==="active"?"approved":s==="dismissed"?"rejected":"pending"};
+                              if(s==="dismissed"&&(a.accrued_commission||0)>0){
+                                // Forfeit commission → Reserve
+                                const vTypes=["bike","keke","mini","full"];
+                                const perType = Math.round((a.accrued_commission||0)/vTypes.length);
+                                for(const vt of vTypes){
+                                  const cur=buckets["reserve_"+vt];
+                                  if(cur) await sb.from("rt_buckets").update({balance:(cur.balance||0)+perType,total_received:(cur.total_received||0)+perType,updated_at:new Date().toISOString()}).eq("bucket_name","reserve_"+vt);
+                                }
+                                updates.accrued_commission=0;
+                              }
+                              await sb.from("rt_agents").update(updates).eq("id",a.id);
+                              await loadData(); showToast(s==="dismissed"?"Captain dismissed. Accrued commission forfeited to Reserve.":"Status updated.");
+                            }
+                          )} style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid "+C.lightgr,
+                            background:(a.captain_status||"pending")===s?(s==="dismissed"?"#991B1B":s==="active"?C.green:C.blue):C.white,
+                            color:(a.captain_status||"pending")===s?C.white:C.grey,
+                            fontSize:11,fontWeight:700,cursor:"pointer",textTransform:"capitalize"}}>
+                            {s==="active"?"✅ Active":s==="dismissed"?"🚫 Dismiss":"⏳ Pending"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Tier upgrade / downgrade */}
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      <button onClick={()=>confirmUpdate(`Manually set ${a.full_name} to Route Captain (5%)?`, ()=>sb.from("rt_agents").update({tier:"captain",commission_rate:5}).eq("id",a.id).then(loadData))}
+                        style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid #BFDBFE",background:a.tier==="captain"?C.blue:C.white,color:a.tier==="captain"?C.white:C.blue,fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                        ⭐ Captain (5%)
+                      </button>
+                      <button onClick={()=>confirmUpdate(`Manually set ${a.full_name} to Route Commander (10%)?`, ()=>sb.from("rt_agents").update({tier:"commander",commission_rate:10}).eq("id",a.id).then(loadData))}
+                        style={{padding:"6px 12px",borderRadius:4,border:"1.5px solid #C4B5FD",background:a.tier==="commander"?"#5B21B6":C.white,color:a.tier==="commander"?C.white:"#5B21B6",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                        🎖️ Commander (10%)
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -1424,13 +1515,6 @@ export default function App(){
                       <label>Amount Received (₦) *</label>
                       <input type="number" placeholder={remitForm.rider_id?(()=>{const sp=SPLIT[riders.find(r=>r.id===remitForm.rider_id)?.vehicle_type]||SPLIT.keke;return"Expected: ₦"+sp.weekly.toLocaleString();})():""} value={remitForm.amount} onChange={e=>setRemitForm(f=>({...f,amount:e.target.value}))}/>
                     </div>
-                    <div className="field">
-                      <label>Has Local Managing Agent?</label>
-                      <select value={remitForm.has_lma} onChange={e=>setRemitForm(f=>({...f,has_lma:e.target.value==="true"}))}>
-                        <option value="true">Yes — LMA assigned</option>
-                        <option value="false">No — No LMA (RoyalTech takes LMA share)</option>
-                      </select>
-                    </div>
                   </div>
                   <div className="field">
                     <label>Notes (optional)</label>
@@ -1441,23 +1525,26 @@ export default function App(){
                     const rider = riders.find(r=>r.id===remitForm.rider_id);
                     const vt = rider?.vehicle_type;
                     const amt = Number(remitForm.amount);
-                    const hasLma = remitForm.has_lma;
+                    const captain = rider?.captain_id ? captains.find(c=>c.id===rider.captain_id) : null;
+                    const captainRate2 = captain?.tier==="commander" ? 0.10 : captain?.tier==="captain" ? 0.05 : 0;
                     const sp2 = SPLIT[vt]||SPLIT.keke;
-                    // Rule 1: investor fixed | Rule 2: LMA 10% of gross (rate from SPLIT) | Rule 3: remainder 50/50
-                    const lmaRate2 = sp2.lma / sp2.weekly;
                     const invA    = Math.min(amt, sp2.inv);
-                    const agentA  = hasLma ? Math.round(amt * lmaRate2) : 0;
+                    const agentA  = Math.round(amt * 0.10); // always 10% to Agent Bucket
+                    const captainComm = Math.round(amt * captainRate2);
+                    const agentSurplus2 = agentA - captainComm;
                     const rem2    = Math.max(0, amt - invA - agentA);
                     const rtA     = Math.round(rem2 * 0.50);
-                    const resA    = rem2 - rtA;
+                    const resA    = rem2 - rtA + agentSurplus2;
                     const expected = sp2.weekly;
                     return(
                       <div style={{background:amt<expected?"#FEF3C7":"#F0FFF4",border:"1.5px solid "+(amt<expected?"#FCD34D":"#BBF7D0"),borderRadius:8,padding:14,marginBottom:12}}>
-                        <div style={{fontWeight:700,fontSize:12,marginBottom:8,color:amt<expected?"#92400E":"#166534"}}>
-                          {amt<expected?"⚠️ SHORT PAYMENT — investor share protected; reserve covers gap at disbursement":"✅ Full payment — standard 3-rule split"}
+                        <div style={{fontWeight:700,fontSize:12,marginBottom:4,color:amt<expected?"#92400E":"#166534"}}>
+                          {amt<expected?"⚠️ SHORT PAYMENT — investor share protected":"✅ Full payment — split preview"}
                         </div>
+                        {captain&&<div style={{fontSize:11,color:C.blue,marginBottom:8}}>🎖️ {captain.full_name} ({captain.tier==="commander"?"Commander 10%":"Captain 5%"}) — earns ₦{captainComm.toLocaleString()} this week</div>}
+                        {!captain&&<div style={{fontSize:11,color:C.grey,marginBottom:8}}>⚠️ No captain assigned — Agent Bucket surplus (10%) → Reserve</div>}
                         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,fontSize:12}}>
-                          {[["Investor",invA,C.blue],["Agent",agentA,C.green],["RoyalTech",rtA,C.orange],["Reserve",resA,"#888"]].map(([l,v,c])=>(
+                          {[["Investor",invA,C.blue],["Agent Bucket",agentA,C.green],["RoyalTech",rtA,C.orange],["Reserve",resA,"#888"]].map(([l,v,c])=>(
                             <div key={l} style={{textAlign:"center",background:"rgba(255,255,255,.7)",borderRadius:6,padding:8}}>
                               <div style={{fontWeight:900,color:c,fontSize:14}}>₦{v.toLocaleString()}</div>
                               <div style={{color:"#666",fontSize:10,marginTop:2}}>{l}</div>
@@ -2332,123 +2419,133 @@ export default function App(){
         </>
       )}
 
-      {/* ══ AGENT PAGE (/agent) ═══════════════════════════════ */}
-      {page==="agent"&&(
+      {/* ══ CAPTAIN PAGE (/captain) ═══════════════════════════ */}
+      {page==="captain"&&(
         <>
           <nav>
             <div className="logo cd">RIDE<span>TRUST</span> HP</div>
-            <div className="nav-tag">MANAGING AGENT</div>
+            <div className="nav-tag">ROUTE CAPTAIN</div>
           </nav>
 
           {/* Hero */}
-          <div style={{background:C.blue,padding:"72px 24px 60px",textAlign:"center",color:C.white}}>
-            <div className="hero-eyebrow" style={{background:C.white,color:C.blue}}>RoyalTech Partnership & Investment Limited</div>
-            <h1 className="hero-h1 cd">Local Managing<br/><span style={{color:"#93C5FD"}}>Agent Requirement</span></h1>
-            <div className="hero-sub" style={{color:"#BFDBFE"}}>Dispatch Bikes · Keke Tricycles · Minibuses · Full Buses & Cabs</div>
-            <p style={{fontSize:15,color:"#BFDBFE",maxWidth:520,margin:"0 auto 36px",lineHeight:1.8}}>Manage riders and drivers in your area. Earn weekly commissions from every vehicle under your management — plus referral bonuses for every new rider or driver you bring in, and quarterly performance bonuses.</p>
-            <button className="btn" style={{background:C.white,color:C.blue}} onClick={()=>openModal("lma")}>Apply as Managing Agent</button>
+          <div style={{background:"#1E1B4B",padding:"72px 24px 60px",textAlign:"center",color:C.white}}>
+            <div className="hero-eyebrow" style={{background:"#C4B5FD",color:"#1E1B4B"}}>RoyalTech Partnership & Investment Limited</div>
+            <h1 className="hero-h1 cd">Route Captain<br/><span style={{color:"#A78BFA"}}>& Commander</span></h1>
+            <div className="hero-sub" style={{color:"#C4B5FD"}}>Field leaders who monitor, motivate, and protect the fleet on the road</div>
+            <p style={{fontSize:15,color:"#A5B4FC",maxWidth:560,margin:"0 auto 28px",lineHeight:1.8}}>
+              Already plying the route? Already own a vehicle? Step up as a Route Captain and earn commission on every rider or driver you manage. Build your fleet. Graduate to Route Commander. The road is your office — and now it pays double.
+            </p>
+            {/* Tier cards */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,maxWidth:500,margin:"0 auto 36px",textAlign:"left"}}>
+              <div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:18,border:"1.5px solid #6D28D9"}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#A78BFA",marginBottom:4}}>⭐ Route Captain</div>
+                <div style={{fontSize:12,color:"#C4B5FD",lineHeight:1.7}}>Up to 10 riders<br/>5% commission on every remittance<br/>Paid monthly</div>
+              </div>
+              <div style={{background:"rgba(255,255,255,.12)",borderRadius:10,padding:18,border:"1.5px solid #F59E0B"}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#FCD34D",marginBottom:4}}>🎖️ Route Commander</div>
+                <div style={{fontSize:12,color:"#FDE68A",lineHeight:1.7}}>More than 10 riders<br/>10% commission on every remittance<br/>Auto-graduated at fleet size 11</div>
+              </div>
+            </div>
+            <button className="btn" style={{background:"#7C3AED",color:C.white,fontSize:16,padding:"16px 36px"}} onClick={()=>openModal("lma")}>Apply as Route Captain — Free</button>
           </div>
 
-          {/* Earnings */}
+          {/* How commission works */}
           <div style={{background:C.offwhite}}>
             <div className="wrap">
-              <div className="sec-lbl" style={{color:C.blue}}>What You Earn</div>
-              <h2 className="sec-h2">Your Commission & Bonuses</h2>
-              <div className="divider" style={{background:C.blue}}/>
+              <div className="sec-lbl" style={{color:"#5B21B6"}}>Earnings</div>
+              <h2 className="sec-h2">What You Earn — And How</h2>
+              <div className="divider" style={{background:"#7C3AED"}}/>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:20}}>
 
-                {/* Card 1 — Weekly commission from remittances */}
-                <div className="lma-earn">
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>💰 Weekly Commission</div>
-                  <div style={{fontSize:11,color:"#94A3B8",marginBottom:14,lineHeight:1.5}}>Earned as a percentage of whatever the rider remits each week. Rate depends on how complete the remittance is.</div>
-                  <div className="earn-row"><span className="earn-lbl">✅ Full remittance (100%)</span><span className="earn-val" style={{color:"#4ADE80"}}>10% of amount paid</span></div>
-                  <div className="earn-row"><span className="earn-lbl">⚠️ Shortfall (50%–99%)</span><span className="earn-val" style={{color:"#FCD34D"}}>5% of amount paid</span></div>
-                  <div className="earn-row"><span className="earn-lbl">❌ Below 50% of target</span><span className="earn-val" style={{color:"#F87171"}}>0% — no commission</span></div>
-                  <div style={{marginTop:10,background:"#0F2027",borderRadius:6,padding:"10px 12px",fontSize:11,color:"#94A3B8",lineHeight:1.8}}>
-                    <strong style={{color:C.white}}>Example — Keke rider (₦90,000/week target):</strong><br/>
-                    Pays ₦90,000 → LMA earns <strong style={{color:"#4ADE80"}}>₦9,000</strong><br/>
-                    Pays ₦50,000 → LMA earns <strong style={{color:"#FCD34D"}}>₦2,500</strong><br/>
-                    Pays ₦40,000 → LMA earns <strong style={{color:"#F87171"}}>₦0</strong>
+                {/* Card 1 — Weekly commission */}
+                <div className="lma-earn" style={{background:"#1E1B4B"}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>💰 Weekly Commission — Accrued, Paid Monthly</div>
+                  <div style={{fontSize:11,color:"#A5B4FC",marginBottom:14,lineHeight:1.5}}>You earn a percentage of what each rider in your fleet actually remits that week. Accrued weekly, paid to you every month.</div>
+                  <div className="earn-row"><span className="earn-lbl" style={{color:"#C4B5FD"}}>⭐ Route Captain (≤10 fleet)</span><span className="earn-val" style={{color:"#A78BFA"}}>5% of gross remittance</span></div>
+                  <div className="earn-row"><span className="earn-lbl" style={{color:"#FDE68A"}}>🎖️ Route Commander (&gt;10 fleet)</span><span className="earn-val" style={{color:"#FCD34D"}}>10% of gross remittance</span></div>
+                  <div style={{marginTop:10,background:"#0F0A2E",borderRadius:6,padding:"10px 12px",fontSize:11,color:"#A5B4FC",lineHeight:1.8}}>
+                    <strong style={{color:C.white}}>Example — Captain with 8 keke riders (₦90,000/wk each):</strong><br/>
+                    All 8 pay full → 8 × ₦90,000 × 5% = <strong style={{color:"#A78BFA"}}>₦36,000/week</strong><br/>
+                    Monthly: ~4 weeks → <strong style={{color:"#A78BFA"}}>₦144,000/month</strong>
+                  </div>
+                  <div style={{marginTop:10,background:"#0F0A2E",borderRadius:6,padding:"10px 12px",fontSize:11,color:"#FDE68A",lineHeight:1.8}}>
+                    <strong style={{color:C.white}}>Example — Commander with 15 keke riders (₦90,000/wk each):</strong><br/>
+                    All 15 pay full → 15 × ₦90,000 × 10% = <strong style={{color:"#FCD34D"}}>₦135,000/week</strong><br/>
+                    Monthly: ~4 weeks → <strong style={{color:"#FCD34D"}}>₦540,000/month</strong>
                   </div>
                   <div style={{marginTop:12,fontSize:11,color:"#64748B",lineHeight:1.6,borderTop:"1px solid #334155",paddingTop:10}}>
-                    ✅ Aggregated and paid <strong style={{color:"#94A3B8"}}>monthly</strong> by RoyalTech. No advances.
+                    ✅ Accrued weekly. Paid out by RoyalTech at the end of every calendar month. No advances.<br/>
+                    ⚠️ Dismissed captains forfeit all accrued and unpaid commission — it goes to the Reserve Bucket.
                   </div>
                 </div>
 
-                {/* Card 2 — Rider/Driver referral bonus */}
-                <div className="lma-earn">
+                {/* Card 2 — Referral bonus */}
+                <div className="lma-earn" style={{background:"#1E1B4B"}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>🎁 Rider/Driver Referral Bonus</div>
-                  <div style={{fontSize:11,color:"#94A3B8",marginBottom:14,lineHeight:1.5}}>Earned for each rider/driver you recruit who successfully takes delivery of their vehicle.</div>
+                  <div style={{fontSize:11,color:"#A5B4FC",marginBottom:14,lineHeight:1.5}}>Refer a rider or driver who takes delivery of their vehicle and makes their first remittance — earn a one-time bonus, and they automatically join your fleet.</div>
                   <div className="earn-row"><span className="earn-lbl">🏍️ Refer a bike rider</span><span className="earn-val">₦50,000</span></div>
                   <div className="earn-row"><span className="earn-lbl">🛺 Refer a keke rider</span><span className="earn-val">₦150,000</span></div>
-                  <div className="earn-row"><span className="earn-lbl">🚐 Refer a minibus driver</span><span className="earn-val">₦200,000</span></div>
+                  <div className="earn-row"><span className="earn-lbl">🚗 Refer a mini korope driver</span><span className="earn-val">₦200,000</span></div>
                   <div className="earn-row"><span className="earn-lbl">🚌 Refer a full bus / cab driver</span><span className="earn-val">₦250,000</span></div>
+                  <div style={{marginTop:10,background:"#0F0A2E",borderRadius:6,padding:"10px 12px",fontSize:11,color:"#A5B4FC",lineHeight:1.8}}>
+                    <strong style={{color:C.white}}>Note:</strong> The referred rider is auto-assigned to your fleet — they are your responsibility from day one. Each referral moves you one step closer to Commander tier.
+                  </div>
                   <div style={{marginTop:12,fontSize:11,color:"#64748B",lineHeight:1.6,borderTop:"1px solid #334155",paddingTop:10}}>
-                    ✅ Redeemable: After the referred rider takes delivery of their vehicle and makes their <strong style={{color:"#94A3B8"}}>first weekly remittance</strong>.
+                    ✅ Redeemable after the referred rider takes delivery and makes their first weekly remittance.
                   </div>
                 </div>
 
-                {/* Card 3 — LMA-to-LMA referral bonus */}
-                <div className="lma-earn">
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>🤝 LMA Recruitment Bonus</div>
-                  <div style={{fontSize:11,color:"#94A3B8",marginBottom:14,lineHeight:1.5}}>Earned when you successfully recruit another LMA onto RideTrust and they activate their jurisdiction.</div>
-                  <div className="earn-row"><span className="earn-lbl">Per LMA recruited</span><span className="earn-val">₦50,000</span></div>
-                  <div style={{marginTop:6,fontSize:11,color:"#94A3B8",lineHeight:1.6}}>No cap — earn for every LMA you bring on board who qualifies.</div>
+                {/* Card 3 — Captain Recruitment Bonus */}
+                <div className="lma-earn" style={{background:"#1E1B4B"}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>🤝 Captain Recruitment Bonus</div>
+                  <div style={{fontSize:11,color:"#A5B4FC",marginBottom:14,lineHeight:1.5}}>Recruit another active rider or driver to become a Route Captain. Earn when they activate their first fleet of 3 riders.</div>
+                  <div className="earn-row"><span className="earn-lbl">Per Captain recruited & activated</span><span className="earn-val">₦50,000</span></div>
+                  <div style={{marginTop:6,fontSize:11,color:"#94A3B8",lineHeight:1.6}}>No cap — the more captains you bring in, the more you earn. RideTrust grows, you earn.</div>
                   <div style={{marginTop:12,fontSize:11,color:"#64748B",lineHeight:1.6,borderTop:"1px solid #334155",paddingTop:10}}>
-                    ✅ Redeemable: After the recruited LMA has <strong style={{color:"#94A3B8"}}>3 riders delivered</strong> and each has made at least <strong style={{color:"#94A3B8"}}>4 weekly remittances</strong> — no ghost LMAs.
+                    ✅ Redeemable after the recruited Captain has 3 riders who have taken delivery and completed at least 4 weekly remittances.
                   </div>
                 </div>
 
-                {/* Card 4 — Quarterly zero-default bonus */}
-                <div className="lma-earn">
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>⭐ Zero-Default Bonus</div>
-                  <div style={{fontSize:11,color:"#94A3B8",marginBottom:14,lineHeight:1.5}}>Quarterly reward for LMAs with zero missed or partial remittances across their entire active rider portfolio.</div>
-                  <div className="earn-row"><span className="earn-lbl">Rate</span><span className="earn-val">2% of quarterly remittances</span></div>
-                  <div style={{marginTop:10,background:"#0F2027",borderRadius:6,padding:"10px 12px",fontSize:11,color:"#94A3B8",lineHeight:1.8}}>
-                    <strong style={{color:C.white}}>Example — 15-rider portfolio:</strong><br/>
-                    10 bikes × ₦40,000 × 13 weeks = ₦5,200,000<br/>
-                    5 kekes × ₦90,000 × 13 weeks = ₦5,850,000<br/>
-                    Total remittances = ₦11,050,000<br/>
-                    <strong style={{color:C.orange}}>2% bonus = ₦221,000 for the quarter</strong>
+                {/* Card 4 — Zero-Default Bonus */}
+                <div className="lma-earn" style={{background:"#1E1B4B"}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>⭐ Zero-Default Quarterly Bonus</div>
+                  <div style={{fontSize:11,color:"#A5B4FC",marginBottom:14,lineHeight:1.5}}>Every quarter with zero missed or partial remittances across your entire fleet earns a 2% bonus on total fleet remittances.</div>
+                  <div className="earn-row"><span className="earn-lbl">Rate</span><span className="earn-val">2% of total fleet remittances</span></div>
+                  <div style={{marginTop:10,background:"#0F0A2E",borderRadius:6,padding:"10px 12px",fontSize:11,color:"#A5B4FC",lineHeight:1.8}}>
+                    <strong style={{color:C.white}}>Example — Commander with 12 keke riders, perfect quarter:</strong><br/>
+                    12 × ₦90,000 × 13 weeks = ₦14,040,000<br/>
+                    <strong style={{color:"#FCD34D"}}>2% bonus = ₦280,800 for the quarter</strong>
                   </div>
                   <div style={{marginTop:12,fontSize:11,color:"#64748B",lineHeight:1.6,borderTop:"1px solid #334155",paddingTop:10}}>
-                    ✅ Redeemable: End of each quarter — zero shortfalls, zero defaults, across all active riders for the full 13-week period.
+                    ✅ Paid within 14 days of quarter end. One shortfall anywhere in your fleet forfeits it entirely.
                   </div>
                 </div>
 
               </div>
 
-              {/* Combined T&Cs */}
+              {/* T&Cs */}
               <div style={{marginTop:20,background:"#1A1A2E",borderRadius:10,padding:"16px 20px",fontSize:12,color:"#94A3B8",lineHeight:1.8}}>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:C.white,marginBottom:12}}>📋 Bonus & Commission — Terms & Conditions</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:C.white,marginBottom:12}}>📋 Route Captain — Terms & Conditions</div>
+                <div style={{color:"#A78BFA",fontWeight:700,marginBottom:4,fontSize:12}}>A. Commission</div>
+                1. Commission is 5% of gross weekly remittance per rider (Route Captain tier, ≤10 fleet) or 10% (Route Commander tier, &gt;10 fleet).<br/>
+                2. Commission is accrued weekly and credited to your account. It is paid out monthly by RoyalTech — no advances.<br/>
+                3. A captain dismissed for any reason forfeits <strong style={{color:C.white}}>all accrued, unpaid commission</strong>. It transfers permanently to the Reserve Bucket.<br/>
+                4. Riders with no assigned captain: their Agent Bucket allocation (10%) goes entirely to the Reserve Bucket — no captain earns it.<br/><br/>
 
-                <div style={{color:C.orange,fontWeight:700,marginBottom:4,fontSize:12}}>A. Weekly Commission (Remittance)</div>
-                1. Commission is calculated as a percentage of the amount actually remitted by the rider each week, on a three-tier scale:<br/>
-                &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Full remittance (100% of weekly target)</strong> → LMA earns <strong style={{color:"#4ADE80"}}>10%</strong> of the amount paid.<br/>
-                &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Shortfall (50% to 99% of weekly target)</strong> → LMA earns <strong style={{color:"#FCD34D"}}>5%</strong> of the amount paid.<br/>
-                &nbsp;&nbsp;&nbsp;• <strong style={{color:C.white}}>Below 50% of weekly target</strong> → LMA earns <strong style={{color:"#F87171"}}>0%</strong> — no commission for that week.<br/>
-                2. The percentage is applied to what the rider actually paid, not the weekly target amount.<br/>
-                3. Commission is confirmed only after RoyalTech verifies and accepts the remittance.<br/>
-                4. Commission is aggregated and paid <strong style={{color:C.white}}>monthly</strong>. No advances.<br/><br/>
+                <div style={{color:"#A78BFA",fontWeight:700,marginBottom:4,fontSize:12}}>B. Tier Graduation</div>
+                5. You start as a Route Captain (5%) from Day 1.<br/>
+                6. When your active fleet exceeds 10 riders/drivers, you are automatically graduated to Route Commander (10%). This is permanent unless your fleet drops back — admin reviews on a case-by-case basis.<br/>
+                7. RoyalTech may manually graduate or demote a captain based on performance.<br/><br/>
 
-                <div style={{color:C.orange,fontWeight:700,marginBottom:4,fontSize:12}}>B. Rider / Driver Referral Bonus</div>
-                4. Bonus is paid <strong style={{color:C.white}}>only after</strong> the referred applicant takes delivery of their vehicle and completes their first weekly remittance.<br/>
-                5. If the referred applicant withdraws before delivery, the bonus is forfeited and reversed if already advanced.<br/>
-                6. The referring LMA automatically becomes a <strong style={{color:C.white}}>co-guarantor</strong> for the referred rider for the first 12 weeks of their HP term.<br/>
-                7. RoyalTech reserves the right to withhold or claw back the bonus if the referred rider defaults within the first 12 weeks.<br/>
-                8. The referred applicant must not already be registered under any other LMA on the platform at time of referral.<br/><br/>
+                <div style={{color:"#A78BFA",fontWeight:700,marginBottom:4,fontSize:12}}>C. Fleet Assignment</div>
+                8. Riders you refer are auto-assigned to your fleet — subject to admin approval.<br/>
+                9. Admin may move riders between fleets or reassign a dismissed captain's fleet at their discretion.<br/>
+                10. A RideTrust rider may decline the Route Captain role — in that case, no automatic fleet assignment happens.<br/><br/>
 
-                <div style={{color:C.orange,fontWeight:700,marginBottom:4,fontSize:12}}>C. LMA Recruitment Bonus</div>
-                9. Bonus is paid only after the recruited LMA has been formally onboarded, signed the RoyalTech/Agent Agreement, and has <strong style={{color:C.white}}>at least 3 riders/drivers who have taken delivery</strong> in their jurisdiction, each having completed a minimum of <strong style={{color:C.white}}>4 weekly remittance payments</strong>.<br/>
-                10. The 3 qualifying riders must be in the recruited LMA's own jurisdiction — riders already registered under another LMA do not count.<br/>
-                11. If the recruited LMA exits or is deactivated before the threshold is reached, no bonus is paid.<br/>
-                12. All referrals (rider and LMA) must be registered through the official LMA portal. Verbal or informal referrals are not eligible.<br/><br/>
-
-                <div style={{color:C.orange,fontWeight:700,marginBottom:4,fontSize:12}}>D. Quarterly Zero-Default Bonus</div>
-                13. Bonus is calculated at <strong style={{color:C.white}}>2% of total confirmed remittances</strong> received by RoyalTech from the LMA's active rider portfolio over the 13-week quarter.<br/>
-                14. A single missed, partial, or reversed remittance from any rider in the LMA's portfolio in that quarter disqualifies the LMA from the zero-default bonus for that quarter.<br/>
-                15. The bonus is assessed and paid within 14 days of the quarter end. No partial credits are given — the standard is zero defaults, no exceptions.<br/>
-                16. An LMA on probation or under investigation for the quarter is automatically excluded from the zero-default bonus for that period.
+                <div style={{color:"#A78BFA",fontWeight:700,marginBottom:4,fontSize:12}}>D. Referral & Recruitment Bonuses</div>
+                11. Rider referral bonus: paid after the referred rider takes delivery and completes their first weekly remittance.<br/>
+                12. Captain recruitment bonus: paid after the recruited captain has 3 riders with minimum 4 remittances each.<br/>
+                13. All referrals must be registered through the official RideTrust platform. Verbal referrals are not eligible.
               </div>
             </div>
           </div>
@@ -2456,72 +2553,62 @@ export default function App(){
           {/* Requirements */}
           <div style={{background:C.white}}>
             <div className="wrap">
-              <div className="sec-lbl" style={{color:C.blue}}>Qualification</div>
+              <div className="sec-lbl" style={{color:"#5B21B6"}}>Qualification</div>
               <h2 className="sec-h2">What You Need to Qualify</h2>
-              <div className="divider" style={{background:C.blue}}/>
+              <div className="divider" style={{background:"#7C3AED"}}/>
               <ul className="req-list">
+                <li><strong>Proof of vehicle ownership</strong> — you must own an active vehicle (bike, keke, mini korope, bus or cab) and currently ply a route. This is the single most important requirement.</li>
                 <li>Valid government-issued photo ID — National ID, Voter's Card, Driver's Licence, Passport or NIN slip</li>
-                <li>Home or work address with utility bill — your name must match on both the ID and the utility bill</li>
-                <li>Parking yard with enough space for at least 10 keke tricycles — photo evidence required</li>
-                <li>Self-rate your tech skills from 1 (none) to 5 (very good)</li>
-                <li>Self-rate your transport business management experience from 1 (none) to 5 (very experienced)</li>
-                <li>2 guarantors</li>
-                <li>Basic training — product knowledge and operational SOPs from RoyalTech</li>
-                <li>Signed RoyalTech/Agent agreement</li>
+                <li>Declared route — the specific route(s) or area you operate in and will manage riders on</li>
+                <li>Self-rate your tech skills from 1 (none) to 5 (very good) — basic smartphone ability is enough</li>
+                <li>Self-rate your transport business experience from 1 (none) to 5 (very experienced)</li>
+                <li>Basic onboarding — RoyalTech will walk you through what to track and how to report</li>
+                <li>Signed RoyalTech / Route Captain agreement</li>
               </ul>
-              <button className="btn btn-full" style={{background:C.blue,color:C.white,marginTop:24}} onClick={()=>openModal("lma")}>Apply Now — It's Free</button>
+              <div style={{marginTop:16,background:"#F5F3FF",borderRadius:8,padding:"14px 18px",fontSize:13,color:"#5B21B6",lineHeight:1.8}}>
+                <strong>Note:</strong> Non-RideTrust applicants (independent riders and drivers from any route in Nigeria) are welcome to apply. You do not need to be a RideTrust rider to become a Route Captain — but you must own your vehicle and currently work the road.
+              </div>
+              <button className="btn btn-full" style={{background:"#7C3AED",color:C.white,marginTop:24}} onClick={()=>openModal("lma")}>Apply Now — It's Free</button>
             </div>
           </div>
 
-          {/* Rider info for agents */}
-          <div style={{background:"#EFF6FF",borderTop:"1.5px solid #BFDBFE"}}>
+          {/* HP product info */}
+          <div style={{background:"#F5F3FF",borderTop:"1.5px solid #DDD6FE"}}>
             <div className="wrap">
-              <div className="sec-lbl" style={{color:C.blue}}>The Product You Will Manage</div>
-              <h2 className="sec-h2">Understanding the Hire Purchase Deals</h2>
-              <div className="divider" style={{background:C.blue}}/>
-              <p className="sec-body">As a Managing Agent, you need to understand what your riders and drivers are on. Here are the exact hire purchase terms for all four vehicle types.</p>
+              <div className="sec-lbl" style={{color:"#5B21B6"}}>The Product You Will Manage</div>
+              <h2 className="sec-h2">Understanding the Hire Purchase Terms</h2>
+              <div className="divider" style={{background:"#7C3AED"}}/>
+              <p className="sec-body">As a Route Captain, you need to understand what your riders and drivers are on — their weekly targets, their deposit obligations, and their ownership timeline.</p>
               <div className="v-grid" style={{marginTop:24}}>
-                <div style={{background:C.white,borderRadius:8,padding:20,border:"1.5px solid #BFDBFE"}}>
-                  <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🏍️ Dispatch Bike</div>
-                  <div className="v-row"><span className="v-lbl">Rider deposit</span><span className="v-val">₦200,000</span></div>
-                  <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦40,000 / week</span></div>
-                  <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">45 weeks</span></div>
-                </div>
-                <div style={{background:C.white,borderRadius:8,padding:20,border:"1.5px solid #BFDBFE"}}>
-                  <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🛺 Keke Tricycle</div>
-                  <div className="v-row"><span className="v-lbl">Rider deposit</span><span className="v-val">₦600,000</span></div>
-                  <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦90,000 / week</span></div>
-                  <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">78 weeks</span></div>
-                </div>
-                <div style={{background:C.white,borderRadius:8,padding:20,border:"1.5px solid #BFDBFE"}}>
-                  <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🚐 Minibus (Korope)</div>
-                  <div className="v-row"><span className="v-lbl">Driver deposit</span><span className="v-val">₦800,000</span></div>
-                  <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦90,000 / week</span></div>
-                  <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">130 weeks</span></div>
-                </div>
-                <div style={{background:C.white,borderRadius:8,padding:20,border:"1.5px solid #BFDBFE"}}>
-                  <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>🚌 Full Bus / Cab</div>
-                  <div className="v-row"><span className="v-lbl">Driver deposit</span><span className="v-val">₦1,000,000</span></div>
-                  <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦120,000 / week</span></div>
-                  <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">152 weeks</span></div>
-                </div>
-              </div>
-              <div style={{marginTop:16,fontSize:13,color:C.grey,lineHeight:1.8}}>
-                Riders and drivers make weekly remittances directly to RoyalTech and submit proof of payment to you for verification. You track compliance across your full portfolio and report to RoyalTech.
+                {[
+                  {e:"🏍️",n:"Dispatch Bike",dep:"₦200,000",wkly:"₦40,000/week",term:"45 weeks",cap5:"₦2,000/week",cap10:"₦4,000/week"},
+                  {e:"🛺",n:"Keke Tricycle",dep:"₦600,000",wkly:"₦90,000/week",term:"78 weeks",cap5:"₦4,500/week",cap10:"₦9,000/week"},
+                  {e:"🚗",n:"Mini Korope",dep:"₦800,000",wkly:"₦90,000/week",term:"130 weeks",cap5:"₦4,500/week",cap10:"₦9,000/week"},
+                  {e:"🚌",n:"Full Bus / Cab",dep:"₦1,000,000",wkly:"₦120,000/week",term:"152 weeks",cap5:"₦6,000/week",cap10:"₦12,000/week"},
+                ].map(v=>(
+                  <div key={v.n} style={{background:C.white,borderRadius:8,padding:20,border:"1.5px solid #DDD6FE"}}>
+                    <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>{v.e} {v.n}</div>
+                    <div className="v-row"><span className="v-lbl">Rider deposit</span><span className="v-val">{v.dep}</span></div>
+                    <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">{v.wkly}</span></div>
+                    <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">{v.term}</span></div>
+                    <div className="v-row"><span className="v-lbl" style={{color:"#7C3AED"}}>⭐ Capt. earns (5%)</span><span className="v-val" style={{color:"#7C3AED"}}>{v.cap5}</span></div>
+                    <div className="v-row"><span className="v-lbl" style={{color:"#D97706"}}>🎖️ Cmdr. earns (10%)</span><span className="v-val" style={{color:"#D97706"}}>{v.cap10}</span></div>
+                  </div>
+                ))}
               </div>
               <div style={{marginTop:16}}>
-                <button className="btn btn-outline" style={{color:C.blue,borderColor:C.blue,fontSize:13}} onClick={()=>navigate("ride")}>View Full Rider Information →</button>
+                <button className="btn btn-outline" style={{color:"#5B21B6",borderColor:"#7C3AED",fontSize:13}} onClick={()=>navigate("ride")}>View Full Rider Information →</button>
               </div>
             </div>
           </div>
 
-          <ContactSection accentColor={C.blue}/>
+          <ContactSection accentColor={"#5B21B6"}/>
 
-          <div className="cta-strip" style={{background:C.blue}}>
-            <h2 className="cta-h cd">Ready to Become a Managing Agent?</h2>
-            <p className="cta-s">Free application. Weekly commissions. Referral bonuses. Quarterly performance bonus. No limits.</p>
+          <div className="cta-strip" style={{background:"#1E1B4B"}}>
+            <h2 className="cta-h cd">Ready to Lead the Route?</h2>
+            <p className="cta-s">Free application. Start at 5%. Graduate to 10%. Your fleet. Your route. Your income.</p>
             <div className="cta-btns">
-              <button className="btn btn-white" style={{color:C.blue}} onClick={()=>openModal("lma")}>Apply Now — Free</button>
+              <button className="btn btn-white" style={{color:"#1E1B4B"}} onClick={()=>openModal("lma")}>Apply as Route Captain — Free</button>
             </div>
           </div>
           <Footer/>
@@ -2865,59 +2952,54 @@ export default function App(){
               </>
             )}
 
-            {/* LMA */}
+            {/* Route Captain */}
             {modal==="lma"&&(
               <>
-                <div className="modal-h cd">🏢 Agent Application</div>
+                <div className="modal-h cd">🎖️ Route Captain Application</div>
                 <div className="modal-s">Free application. No fees. RoyalTech will contact you within 48 hours.</div>
                 <div style={{display:"flex",gap:8,marginBottom:16}}>
-                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===1?C.blue:"#E8E5E0",color:appStage===1?C.white:C.grey}}>Step 1: Basic Info</div>
-                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===2?C.blue:"#E8E5E0",color:appStage===2?C.white:C.grey}}>Step 2: Documents</div>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===1?"#7C3AED":"#E8E5E0",color:appStage===1?C.white:C.grey}}>Step 1: Basic Info</div>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===2?"#7C3AED":"#E8E5E0",color:appStage===2?C.white:C.grey}}>Step 2: Documents</div>
                 </div>
                 {appStage===1&&(<>
                   <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                   <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                   <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
-                  <div className="field"><label>Home / Work Address *</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
-                  <div className="field"><label>Tech Skills (1 = None, 5 = Very Good)</label>
+                  <div className="field"><label>Home / Work Address</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
+                  <div className="field"><label>Declared Route / Area of Operation *</label><input placeholder="e.g. Ojota–Maryland, Ikeja axis" onChange={e=>setF("declaredRoute",e.target.value)}/><div className="field-note">The specific route or neighbourhood you manage riders on.</div></div>
+                  <div className="field"><label>Tech Skills (1 = None, 5 = Very Good) — Optional</label>
                     <select onChange={e=>setF("techSkills",e.target.value)}>
                       <option value="">Select</option>{[1,2,3,4,5].map(n=><option key={n}>{n}</option>)}
                     </select>
                   </div>
-                  <div className="field"><label>Transport Business Experience (1 = None, 5 = Very Experienced)</label>
+                  <div className="field"><label>Transport Business Experience (1 = None, 5 = Very Experienced) — Optional</label>
                     <select onChange={e=>setF("bizExp",e.target.value)}>
                       <option value="">Select</option>{[1,2,3,4,5].map(n=><option key={n}>{n}</option>)}
                     </select>
                   </div>
-                  <button className="submit-btn" style={{background:C.blue}} onClick={()=>submitStage1("lma")}>Continue to Step 2 →</button>
+                  <button className="submit-btn" style={{background:"#7C3AED"}} onClick={()=>submitStage1("lma")}>Continue to Step 2 →</button>
                 </>)}
                 {appStage===2&&(<>
-                  <div style={{background:"#EFF6FF",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:13,color:C.grey}}>
-                    ✅ Basic info saved. Now upload your documents to complete your application.
+                  <div style={{background:"#F5F3FF",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:13,color:C.grey}}>
+                    ✅ Basic info saved. Now upload your vehicle proof and photo ID to complete your application.
                   </div>
                   <div className="field">
-                    <label>Utility Bill Photo * <span style={{color:C.grey,fontWeight:400,fontSize:11}}>(name must match ID)</span></label>
-                    <button className="snap-btn" style={{borderColor:"#FCD34D",color:C.orange,background:"#FFF7ED"}} onClick={()=>document.getElementById("snap-util").click()}>
-                      <span>📄</span><span>{form.utilityBill?"✅ Captured — tap to retake":"Tap to snap utility bill"}</span>
+                    <label>Vehicle Proof Photo * <span style={{color:C.grey,fontWeight:400,fontSize:11}}>(your own or managed vehicle)</span></label>
+                    <button className="snap-btn" style={{borderColor:"#C4B5FD",color:"#7C3AED",background:"#F5F3FF"}} onClick={()=>document.getElementById("snap-veh-lma").click()}>
+                      <span>🚗</span><span>{form.vehicleProof?"✅ Vehicle captured — tap to retake":"Tap to snap your vehicle"}</span>
                     </button>
-                    <input id="snap-util" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("utilityBill",ev.target.result);r.readAsDataURL(f);}}/>
-                  </div>
-                  <div className="field">
-                    <label>Parking Yard Photo * <span style={{color:C.grey,fontWeight:400,fontSize:11}}>(must fit at least 10 keke)</span></label>
-                    <button className="snap-btn" style={{borderColor:"#86EFAC",color:C.green,background:"#F0FFF4"}} onClick={()=>document.getElementById("snap-park").click()}>
-                      <span>🅿️</span><span>{form.parkingPhoto?"✅ Captured — tap to retake":"Tap to snap parking yard"}</span>
-                    </button>
-                    <input id="snap-park" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("parkingPhoto",ev.target.result);r.readAsDataURL(f);}}/>
+                    <input id="snap-veh-lma" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("vehicleProof",ev.target.result);r.readAsDataURL(f);}}/>
+                    <div className="field-note">Photo of your bike, keke, or car — proves you operate in transport.</div>
                   </div>
                   <div className="field">
                     <label>Valid Photo ID *</label>
-                    <button className="snap-btn" style={{borderColor:"#93C5FD",color:C.blue,background:"#EFF6FF"}} onClick={()=>document.getElementById("snap-id-lma").click()}>
+                    <button className="snap-btn" style={{borderColor:"#C4B5FD",color:"#7C3AED",background:"#F5F3FF"}} onClick={()=>document.getElementById("snap-id-lma").click()}>
                       <span>📷</span><span>{form.photoId?"✅ ID captured — tap to retake":"Tap to snap your ID"}</span>
                     </button>
                     <input id="snap-id-lma" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("photoId",ev.target.result);r.readAsDataURL(f);}}/>
                     <div className="field-note">National ID, Voter's Card, Driver's Licence, Passport or NIN slip.</div>
                   </div>
-                  <button className="submit-btn" style={{background:C.blue}} onClick={()=>submitStage2("lma")}>Complete Agent Application ✓</button>
+                  <button className="submit-btn" style={{background:"#7C3AED"}} onClick={()=>submitStage2("lma")}>Complete Captain Application ✓</button>
                 </>)}
               </>
             )}
