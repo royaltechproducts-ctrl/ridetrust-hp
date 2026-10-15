@@ -2605,7 +2605,7 @@ export default function App(){
           <ContactSection accentColor={"#5B21B6"}/>
 
           <div className="cta-strip" style={{background:"#1E1B4B"}}>
-            <h2 className="cta-h cd">Ready to Lead the Route?</h2>
+            <h2 className="cta-h cd">Ready to Manage Our Fleet for 5 – 10% Commission?</h2>
             <p className="cta-s">Free application. Start at 5%. Graduate to 10%. Your fleet. Your route. Your income.</p>
             <div className="cta-btns">
               <button className="btn btn-white" style={{color:"#1E1B4B"}} onClick={()=>openModal("lma")}>Apply as Route Captain — Free</button>
