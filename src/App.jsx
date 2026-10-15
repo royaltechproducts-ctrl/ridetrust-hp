@@ -267,6 +267,8 @@ export default function App(){
   useState(()=>{ const fn=()=>setPage(getPage()); window.addEventListener("hashchange",fn); return ()=>window.removeEventListener("hashchange",fn); });
   const [modal,     setModal]     = useState(null);
   const [form,      setForm]      = useState({});
+  const [appStage,  setAppStage]  = useState(1);
+  const [stage1RiderId, setStage1RiderId] = useState(null);
   const [toast,     setToast]     = useState(null);
   const [loginForm, setLoginForm] = useState({email:"",password:""});
   const [adminOn,   setAdminOn]   = useState(false);
@@ -478,6 +480,119 @@ export default function App(){
   };
 
   const confirmUpdate = (msg, fn) => setConfirmDialog({msg, onConfirm: fn});
+
+  // ── Two-stage rider/agent submission ──────────────────────────
+
+  const openModal = (m) => { setModal(m); setAppStage(1); setForm({}); setStage1RiderId(null); };
+
+  const submitStage1 = async type => {
+    if(!form.name?.trim()||!form.phone?.trim()||!form.email?.trim()){
+      showToast("Please fill in all required fields."); return;
+    }
+    const { refType, refId, dest } = parseReferral();
+    try {
+      if(type==="lma"){
+        // LMA stage 1: just basic info, save to rt_agents with status "stage1_complete"
+        const { data: newAgent } = await sb.from("rt_agents").insert({
+          full_name: form.name, phone: form.phone, email: form.email,
+          address: form.address||null,
+          tech_skills: form.techSkills?Number(form.techSkills):null,
+          biz_experience: form.bizExp?Number(form.bizExp):null,
+          ref_type: refType||null, ref_id: refId||null,
+          app_status: "stage1_complete",
+        }).select().single();
+        if(refType && dest){
+          await sb.from("referral_visits").update({converted:true})
+            .eq("ref_type",refType).eq("destination",dest).eq("converted",false)
+            .order("visited_at",{ascending:false}).limit(1);
+        }
+        setStage1RiderId(newAgent?.id||null);
+      } else {
+        const pwd  = genPassword("R");
+        const rcode = genReferralCode(form.name);
+        const vtMap = {"rider-bike":"bike","rider-keke":"keke","rider-mini":"mini","rider-full":"full"};
+        const { data: newRider } = await sb.from("rt_riders").insert({
+          vehicle_type: vtMap[type]||"keke",
+          full_name: form.name, phone: form.phone, email: form.email,
+          address: form.address||null, experience: form.experience||null,
+          referrer: form.referrer||null,
+          password: pwd, referral_code: rcode,
+          referred_by: form.referrer||null,
+          ref_type: refType||null, ref_id: refId||null,
+          app_status: "stage1_complete",
+          rider_status: "not_committed",
+          hp_discount_balance: 0,
+        }).select().single();
+        if(refType && dest){
+          await sb.from("referral_visits").update({converted:true})
+            .eq("ref_type",refType).eq("destination",dest).eq("converted",false)
+            .order("visited_at",{ascending:false}).limit(1);
+        }
+        // Auto mutual guarantee from referral
+        if(form.referrer&&newRider){
+          const {data:referrers} = await sb.from("rt_riders").select("*")
+            .or(`phone.ilike.%${form.referrer}%,full_name.ilike.%${form.referrer}%`);
+          if(referrers&&referrers.length>0){
+            const referrer = referrers[0];
+            await sb.from("rt_guarantors").insert({
+              guarantor_rider_id: referrer.id, beneficiary_rider_id: newRider.id,
+              guarantor_name: referrer.full_name, guarantor_email: referrer.email,
+              guarantor_phone: referrer.phone, status: "pending", guarantee_type: "mutual",
+            });
+            await sb.from("rt_guarantors").insert({
+              guarantor_rider_id: newRider.id, beneficiary_rider_id: referrer.id,
+              guarantor_name: newRider.full_name, guarantor_email: newRider.email,
+              guarantor_phone: newRider.phone, status: "pending", guarantee_type: "mutual",
+            });
+          }
+        }
+        const vType = {"rider-bike":"Dispatch Bike","rider-keke":"Keke Tricycle","rider-mini":"Mini Korope (4-Wheel)","rider-full":"Full Bus / Cab (4-Wheel)"}[type]||"Keke Tricycle";
+        await sendAdminEmail(
+          `New ${vType} Stage 1 — ${form.name}`,
+          `Stage 1 submitted. IDs pending.\n\nName: ${form.name}\nPhone: ${form.phone}\nEmail: ${form.email}\nAddress: ${form.address||"—"}\nExperience: ${form.experience||"—"}\nReferral Code: ${rcode}`
+        );
+        setStage1RiderId(newRider?.id||null);
+      }
+      showToast("Step 1 done! Now upload your ID to complete the application.");
+      setForm({});
+      setAppStage(2);
+    } catch(e){
+      showToast("Submission failed. Please try again.");
+    }
+  };
+
+  const submitStage2 = async type => {
+    if(!stage1RiderId){ showToast("Session error. Please start over."); return; }
+    const isLma = type==="lma";
+    const isBike = type==="rider-bike";
+    try {
+      if(isLma){
+        await sb.from("rt_agents").update({
+          utility_bill: form.utilityBill||null,
+          parking_photo: form.parkingPhoto||null,
+          photo_id: form.photoId||null,
+          app_status: "under_review",
+        }).eq("id", stage1RiderId);
+      } else {
+        const updates = {
+          photo_id: form.photoId||null,
+          app_status: "under_review",
+        };
+        if(isBike) updates.riders_permit = form.ridersPermit||null;
+        else updates.drivers_licence = form.driversLicence||null;
+        await sb.from("rt_riders").update(updates).eq("id", stage1RiderId);
+        const vType = {"rider-bike":"Dispatch Bike","rider-keke":"Keke Tricycle","rider-mini":"Mini Korope (4-Wheel)","rider-full":"Full Bus / Cab (4-Wheel)"}[type]||"Keke Tricycle";
+        await sendAdminEmail(
+          `${vType} Application Complete — ID uploaded`,
+          `Rider ID uploaded. Application now under review.\n\nRider ID: ${stage1RiderId}`
+        );
+      }
+      showToast("Application complete! Check your email for your portal access details.");
+      setModal(null); setForm({}); setAppStage(1); setStage1RiderId(null);
+    } catch(e){
+      showToast("Upload failed. Please try again.");
+    }
+  };
 
   const submit = async type => {
     if(!form.name?.trim()||!form.phone?.trim()||!form.email?.trim()){
@@ -2016,8 +2131,8 @@ export default function App(){
             <div className="hero-sub" style={{color:"#CCC"}}>Best Hire Purchase Ever</div>
             <p style={{fontSize:15,color:"#AAA",maxWidth:520,margin:"0 auto 36px",lineHeight:1.8}}>Brand new bike or keke. Fixed deposit. Weekly payments. Full ownership at the end. No bank. No wahala.</p>
             <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
-              <button className="btn btn-orange" onClick={()=>setModal("rider-bike")}>🏍️ Apply for Bike</button>
-              <button className="btn" style={{background:"#1A1A1A",color:C.white,border:"1.5px solid #333"}} onClick={()=>setModal("rider-keke")}>🛺 Apply for Keke</button>
+              <button className="btn btn-orange" onClick={()=>openModal("rider-bike")}>🏍️ Apply for Bike</button>
+              <button className="btn" style={{background:"#1A1A1A",color:C.white,border:"1.5px solid #333"}} onClick={()=>openModal("rider-keke")}>🛺 Apply for Keke</button>
             </div>
           </div>
 
@@ -2057,7 +2172,7 @@ export default function App(){
                         Each confirmed referral reduces your outstanding balance — same ₦40,000/week, fewer weeks. No limit on referrals.
                       </div>
                     </div>
-                    <button className="btn btn-orange btn-full" onClick={()=>setModal("rider-bike")}>Apply for This Bike</button>
+                    <button className="btn btn-orange btn-full" onClick={()=>openModal("rider-bike")}>Apply for This Bike</button>
                   </div>
                 </div>
 
@@ -2089,7 +2204,7 @@ export default function App(){
                         Each confirmed referral reduces your outstanding balance — same ₦90,000/week, fewer weeks. No limit on referrals.
                       </div>
                     </div>
-                    <button className="btn btn-full" style={{background:C.green,color:C.white,marginTop:12}} onClick={()=>setModal("rider-keke")}>Apply for This Keke</button>
+                    <button className="btn btn-full" style={{background:C.green,color:C.white,marginTop:12}} onClick={()=>openModal("rider-keke")}>Apply for This Keke</button>
                   </div>
                 </div>
 
@@ -2121,7 +2236,7 @@ export default function App(){
                         Each confirmed referral reduces your outstanding balance — same ₦90,000/week, fewer weeks. No limit on referrals.
                       </div>
                     </div>
-                    <button className="btn btn-full" style={{background:"#4338CA",color:C.white,marginTop:12}} onClick={()=>setModal("rider-mini")}>Apply for Minibus (Korope)</button>
+                    <button className="btn btn-full" style={{background:"#4338CA",color:C.white,marginTop:12}} onClick={()=>openModal("rider-mini")}>Apply for Minibus (Korope)</button>
                   </div>
                 </div>
 
@@ -2153,7 +2268,7 @@ export default function App(){
                         Each confirmed referral reduces your outstanding balance — same ₦120,000/week, fewer weeks. No limit on referrals.
                       </div>
                     </div>
-                    <button className="btn btn-full" style={{background:"#B91C1C",color:C.white,marginTop:12}} onClick={()=>setModal("rider-full")}>Apply for Full Bus / Cab</button>
+                    <button className="btn btn-full" style={{background:"#B91C1C",color:C.white,marginTop:12}} onClick={()=>openModal("rider-full")}>Apply for Full Bus / Cab</button>
                   </div>
                 </div>
               </div>
@@ -2205,8 +2320,8 @@ export default function App(){
             <h2 className="cta-h cd">Ready to Own Your Vehicle?</h2>
             <p className="cta-s">No bank. No wahala. Brand new. Yours at the end.</p>
             <div className="cta-btns">
-              <button className="btn btn-white" onClick={()=>setModal("rider-bike")}>🏍️ Apply for Bike</button>
-              <button className="btn btn-black" onClick={()=>setModal("rider-keke")}>🛺 Apply for Keke</button>
+              <button className="btn btn-white" onClick={()=>openModal("rider-bike")}>🏍️ Apply for Bike</button>
+              <button className="btn btn-black" onClick={()=>openModal("rider-keke")}>🛺 Apply for Keke</button>
             </div>
           </div>
           <Footer/>
@@ -2227,7 +2342,7 @@ export default function App(){
             <h1 className="hero-h1 cd">Local Managing<br/><span style={{color:"#93C5FD"}}>Agent Requirement</span></h1>
             <div className="hero-sub" style={{color:"#BFDBFE"}}>Dispatch Bikes · Keke Tricycles · Minibuses · Full Buses & Cabs</div>
             <p style={{fontSize:15,color:"#BFDBFE",maxWidth:520,margin:"0 auto 36px",lineHeight:1.8}}>Manage riders and drivers in your area. Earn weekly commissions from every vehicle under your management — plus referral bonuses for every new rider or driver you bring in, and quarterly performance bonuses.</p>
-            <button className="btn" style={{background:C.white,color:C.blue}} onClick={()=>setModal("lma")}>Apply as Managing Agent</button>
+            <button className="btn" style={{background:C.white,color:C.blue}} onClick={()=>openModal("lma")}>Apply as Managing Agent</button>
           </div>
 
           {/* Earnings */}
@@ -2350,7 +2465,7 @@ export default function App(){
                 <li>Basic training — product knowledge and operational SOPs from RoyalTech</li>
                 <li>Signed RoyalTech/Agent agreement</li>
               </ul>
-              <button className="btn btn-full" style={{background:C.blue,color:C.white,marginTop:24}} onClick={()=>setModal("lma")}>Apply Now — It's Free</button>
+              <button className="btn btn-full" style={{background:C.blue,color:C.white,marginTop:24}} onClick={()=>openModal("lma")}>Apply Now — It's Free</button>
             </div>
           </div>
 
@@ -2402,7 +2517,7 @@ export default function App(){
             <h2 className="cta-h cd">Ready to Become a Managing Agent?</h2>
             <p className="cta-s">Free application. Weekly commissions. Referral bonuses. Quarterly performance bonus. No limits.</p>
             <div className="cta-btns">
-              <button className="btn btn-white" style={{color:C.blue}} onClick={()=>setModal("lma")}>Apply Now — Free</button>
+              <button className="btn btn-white" style={{color:C.blue}} onClick={()=>openModal("lma")}>Apply Now — Free</button>
             </div>
           </div>
           <Footer/>
@@ -2582,41 +2697,47 @@ export default function App(){
               <>
                 <div className="modal-h cd">🏍️ Bike Application</div>
                 <div className="modal-s">Dispatch Bike — ₦200,000 deposit · ₦40,000/week × 45 weeks<br/>RoyalTech will contact you within 24 hours.</div>
-                <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
-                <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
-                <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
-                <div className="field"><label>Home Address</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
-                <div className="field"><label>Riding / Driving Experience</label>
-                  <select onChange={e=>setF("experience",e.target.value)}>
-                    <option value="">Select</option>
-                    <option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>More than 5 years</option>
-                  </select>
+                {/* Stage indicator */}
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===1?C.orange:"#E8E5E0",color:appStage===1?C.white:C.grey}}>Step 1: Basic Info</div>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===2?C.orange:"#E8E5E0",color:appStage===2?C.white:C.grey}}>Step 2: Documents</div>
                 </div>
-                <div className="field"><label>Referred by someone? (Optional)</label><input placeholder="Referrer's name or phone" onChange={e=>setF("referrer",e.target.value)}/></div>
-                <div className="field">
-                  <label>Guarantor 1 — Name & Phone *</label>
-                  <input placeholder="Full name and phone number" onChange={e=>setF("g1",e.target.value)}/>
-                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
-                </div>
-                <div className="field">
-                  <label>Guarantor 2 — Name & Phone *</label>
-                  <input placeholder="Full name and phone number" onChange={e=>setF("g2",e.target.value)}/>
-                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
-                </div>
-                <div className="field">
-                  <label>Guarantor 3 — Name & Phone *</label>
-                  <input placeholder="Full name and phone number" onChange={e=>setF("g3",e.target.value)}/>
-                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
-                </div>
-                <div className="field">
-                  <label>Valid Photo ID *</label>
-                  <button className="snap-btn" style={{borderColor:"#93C5FD",color:C.blue,background:"#EFF6FF"}} onClick={()=>document.getElementById("snap-id-bike").click()}>
-                    <span>📷</span><span>{form.photoId?"✅ ID captured — tap to retake":"Tap to snap your ID"}</span>
-                  </button>
-                  <input id="snap-id-bike" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("photoId",ev.target.result);r.readAsDataURL(f);}}/>
-                  <div className="field-note">National ID, Voter's Card, Driver's Licence, Passport or NIN slip.</div>
-                </div>
-                <button className="submit-btn" style={{background:C.orange}} onClick={()=>submit("rider-bike")}>Submit Bike Application</button>
+                {appStage===1&&(<>
+                  <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
+                  <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
+                  <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
+                  <div className="field"><label>Home Address</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
+                  <div className="field"><label>Riding Experience</label>
+                    <select onChange={e=>setF("experience",e.target.value)}>
+                      <option value="">Select</option>
+                      <option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>More than 5 years</option>
+                    </select>
+                  </div>
+                  <div className="field"><label>Referred by someone? (Optional)</label><input placeholder="Referrer's name or phone" onChange={e=>setF("referrer",e.target.value)}/></div>
+                  <button className="submit-btn" style={{background:C.orange}} onClick={()=>submitStage1("rider-bike")}>Continue to Step 2 →</button>
+                </>)}
+                {appStage===2&&(<>
+                  <div style={{background:"#FFF7ED",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:13,color:C.grey}}>
+                    ✅ Basic info saved. Now upload your documents to complete your application.
+                  </div>
+                  <div className="field">
+                    <label>Valid Rider's Permit *</label>
+                    <button className="snap-btn" style={{borderColor:"#FCD34D",color:C.orange,background:"#FFF7ED"}} onClick={()=>document.getElementById("snap-permit-bike").click()}>
+                      <span>🪪</span><span>{form.ridersPermit?"✅ Permit captured — tap to retake":"Tap to snap your Rider's Permit"}</span>
+                    </button>
+                    <input id="snap-permit-bike" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("ridersPermit",ev.target.result);r.readAsDataURL(f);}}/>
+                    <div className="field-note">Your valid FRSC Rider's Permit / Motorcycle Licence.</div>
+                  </div>
+                  <div className="field">
+                    <label>Valid Govt-Issued Photo ID *</label>
+                    <button className="snap-btn" style={{borderColor:"#93C5FD",color:C.blue,background:"#EFF6FF"}} onClick={()=>document.getElementById("snap-id-bike").click()}>
+                      <span>📷</span><span>{form.photoId?"✅ ID captured — tap to retake":"Tap to snap your Photo ID"}</span>
+                    </button>
+                    <input id="snap-id-bike" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("photoId",ev.target.result);r.readAsDataURL(f);}}/>
+                    <div className="field-note">National ID, Voter's Card, Passport or NIN slip.</div>
+                  </div>
+                  <button className="submit-btn" style={{background:C.orange}} onClick={()=>submitStage2("rider-bike")}>Complete Bike Application ✓</button>
+                </>)}
               </>
             )}
 
@@ -2625,41 +2746,38 @@ export default function App(){
               <>
                 <div className="modal-h cd">🛺 Keke Application</div>
                 <div className="modal-s">Keke Tricycle — ₦600,000 deposit · ₦90,000/week × 78 weeks<br/>RoyalTech will contact you within 24 hours.</div>
-                <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
-                <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
-                <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
-                <div className="field"><label>Home Address</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
-                <div className="field"><label>Keke / Driving Experience</label>
-                  <select onChange={e=>setF("experience",e.target.value)}>
-                    <option value="">Select</option>
-                    <option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>More than 5 years</option>
-                  </select>
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===1?C.green:"#E8E5E0",color:appStage===1?C.white:C.grey}}>Step 1: Basic Info</div>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===2?C.green:"#E8E5E0",color:appStage===2?C.white:C.grey}}>Step 2: Documents</div>
                 </div>
-                <div className="field"><label>Referred by someone? (Optional)</label><input placeholder="Referrer's name or phone" onChange={e=>setF("referrer",e.target.value)}/></div>
-                <div className="field">
-                  <label>Guarantor 1 — Name & Phone *</label>
-                  <input placeholder="Full name and phone number" onChange={e=>setF("g1",e.target.value)}/>
-                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
-                </div>
-                <div className="field">
-                  <label>Guarantor 2 — Name & Phone *</label>
-                  <input placeholder="Full name and phone number" onChange={e=>setF("g2",e.target.value)}/>
-                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
-                </div>
-                <div className="field">
-                  <label>Guarantor 3 — Name & Phone *</label>
-                  <input placeholder="Full name and phone number" onChange={e=>setF("g3",e.target.value)}/>
-                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
-                </div>
-                <div className="field">
-                  <label>Valid Photo ID *</label>
-                  <button className="snap-btn" style={{borderColor:"#93C5FD",color:C.blue,background:"#EFF6FF"}} onClick={()=>document.getElementById("snap-id-keke").click()}>
-                    <span>📷</span><span>{form.photoId?"✅ ID captured — tap to retake":"Tap to snap your ID"}</span>
-                  </button>
-                  <input id="snap-id-keke" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("photoId",ev.target.result);r.readAsDataURL(f);}}/>
-                  <div className="field-note">National ID, Voter's Card, Driver's Licence, Passport or NIN slip.</div>
-                </div>
-                <button className="submit-btn" style={{background:C.green}} onClick={()=>submit("rider-keke")}>Submit Keke Application</button>
+                {appStage===1&&(<>
+                  <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
+                  <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
+                  <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
+                  <div className="field"><label>Home Address</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
+                  <div className="field"><label>Keke / Driving Experience</label>
+                    <select onChange={e=>setF("experience",e.target.value)}>
+                      <option value="">Select</option>
+                      <option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>More than 5 years</option>
+                    </select>
+                  </div>
+                  <div className="field"><label>Referred by someone? (Optional)</label><input placeholder="Referrer's name or phone" onChange={e=>setF("referrer",e.target.value)}/></div>
+                  <button className="submit-btn" style={{background:C.green}} onClick={()=>submitStage1("rider-keke")}>Continue to Step 2 →</button>
+                </>)}
+                {appStage===2&&(<>
+                  <div style={{background:"#F0FFF4",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:13,color:C.grey}}>
+                    ✅ Basic info saved. Now upload your Driver's Licence to complete your application.
+                  </div>
+                  <div className="field">
+                    <label>Valid Driver's Licence *</label>
+                    <button className="snap-btn" style={{borderColor:"#86EFAC",color:C.green,background:"#F0FFF4"}} onClick={()=>document.getElementById("snap-dl-keke").click()}>
+                      <span>🪪</span><span>{form.driversLicence?"✅ Licence captured — tap to retake":"Tap to snap your Driver's Licence"}</span>
+                    </button>
+                    <input id="snap-dl-keke" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("driversLicence",ev.target.result);r.readAsDataURL(f);}}/>
+                    <div className="field-note">Your valid FRSC Driver's Licence.</div>
+                  </div>
+                  <button className="submit-btn" style={{background:C.green}} onClick={()=>submitStage2("rider-keke")}>Complete Keke Application ✓</button>
+                </>)}
               </>
             )}
 
@@ -2668,38 +2786,38 @@ export default function App(){
               <>
                 <div className="modal-h cd">🚗 Mini Korope Application</div>
                 <div className="modal-s">Clean Tokunbo Korope — ₦800,000 deposit · ₦90,000/week × 130 weeks<br/>RoyalTech will contact you within 24 hours.</div>
-                <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
-                <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
-                <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
-                <div className="field"><label>Home Address</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
-                <div className="field"><label>Driving Experience</label>
-                  <select onChange={e=>setF("experience",e.target.value)}>
-                    <option value="">Select</option>
-                    <option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>More than 5 years</option>
-                  </select>
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===1?"#4338CA":"#E8E5E0",color:appStage===1?C.white:C.grey}}>Step 1: Basic Info</div>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===2?"#4338CA":"#E8E5E0",color:appStage===2?C.white:C.grey}}>Step 2: Documents</div>
                 </div>
-                <div className="field"><label>Referred by someone? (Optional)</label><input placeholder="Referrer's name or phone" onChange={e=>setF("referrer",e.target.value)}/></div>
-                <div className="field"><label>Guarantor 1 — Name & Phone *</label>
-                  <input placeholder="Full name and phone number" onChange={e=>setF("g1",e.target.value)}/>
-                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
-                </div>
-                <div className="field"><label>Guarantor 2 — Name & Phone *</label>
-                  <input placeholder="Full name and phone number" onChange={e=>setF("g2",e.target.value)}/>
-                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
-                </div>
-                <div className="field"><label>Guarantor 3 — Name & Phone *</label>
-                  <input placeholder="Full name and phone number" onChange={e=>setF("g3",e.target.value)}/>
-                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
-                </div>
-                <div className="field">
-                  <label>Valid Photo ID *</label>
-                  <button className="snap-btn" style={{borderColor:"#A5B4FC",color:"#4338CA",background:"#EEF2FF"}} onClick={()=>document.getElementById("snap-id-mini").click()}>
-                    <span>📷</span><span>{form.photoId?"✅ ID captured — tap to retake":"Tap to snap your ID"}</span>
-                  </button>
-                  <input id="snap-id-mini" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("photoId",ev.target.result);r.readAsDataURL(f);}}/>
-                  <div className="field-note">National ID, Voter's Card, Driver's Licence, Passport or NIN slip.</div>
-                </div>
-                <button className="submit-btn" style={{background:"#4338CA"}} onClick={()=>submit("rider-mini")}>Submit Mini Application</button>
+                {appStage===1&&(<>
+                  <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
+                  <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
+                  <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
+                  <div className="field"><label>Home Address</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
+                  <div className="field"><label>Driving Experience</label>
+                    <select onChange={e=>setF("experience",e.target.value)}>
+                      <option value="">Select</option>
+                      <option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>More than 5 years</option>
+                    </select>
+                  </div>
+                  <div className="field"><label>Referred by someone? (Optional)</label><input placeholder="Referrer's name or phone" onChange={e=>setF("referrer",e.target.value)}/></div>
+                  <button className="submit-btn" style={{background:"#4338CA"}} onClick={()=>submitStage1("rider-mini")}>Continue to Step 2 →</button>
+                </>)}
+                {appStage===2&&(<>
+                  <div style={{background:"#EEF2FF",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:13,color:C.grey}}>
+                    ✅ Basic info saved. Now upload your Driver's Licence to complete your application.
+                  </div>
+                  <div className="field">
+                    <label>Valid Driver's Licence *</label>
+                    <button className="snap-btn" style={{borderColor:"#A5B4FC",color:"#4338CA",background:"#EEF2FF"}} onClick={()=>document.getElementById("snap-dl-mini").click()}>
+                      <span>🪪</span><span>{form.driversLicence?"✅ Licence captured — tap to retake":"Tap to snap your Driver's Licence"}</span>
+                    </button>
+                    <input id="snap-dl-mini" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("driversLicence",ev.target.result);r.readAsDataURL(f);}}/>
+                    <div className="field-note">Your valid FRSC Driver's Licence.</div>
+                  </div>
+                  <button className="submit-btn" style={{background:"#4338CA"}} onClick={()=>submitStage2("rider-mini")}>Complete Mini Application ✓</button>
+                </>)}
               </>
             )}
 
@@ -2708,38 +2826,38 @@ export default function App(){
               <>
                 <div className="modal-h cd">🚌 Full Bus / Cab Application</div>
                 <div className="modal-s">Full Hiace Bus or Cab Ride — ₦1,000,000 deposit · ₦120,000/week × 152 weeks<br/>RoyalTech will contact you within 24 hours.</div>
-                <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
-                <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
-                <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
-                <div className="field"><label>Home Address</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
-                <div className="field"><label>Driving Experience</label>
-                  <select onChange={e=>setF("experience",e.target.value)}>
-                    <option value="">Select</option>
-                    <option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>More than 5 years</option>
-                  </select>
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===1?"#991B1B":"#E8E5E0",color:appStage===1?C.white:C.grey}}>Step 1: Basic Info</div>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===2?"#991B1B":"#E8E5E0",color:appStage===2?C.white:C.grey}}>Step 2: Documents</div>
                 </div>
-                <div className="field"><label>Referred by someone? (Optional)</label><input placeholder="Referrer's name or phone" onChange={e=>setF("referrer",e.target.value)}/></div>
-                <div className="field"><label>Guarantor 1 — Name & Phone *</label>
-                  <input placeholder="Full name and phone number" onChange={e=>setF("g1",e.target.value)}/>
-                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
-                </div>
-                <div className="field"><label>Guarantor 2 — Name & Phone *</label>
-                  <input placeholder="Full name and phone number" onChange={e=>setF("g2",e.target.value)}/>
-                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
-                </div>
-                <div className="field"><label>Guarantor 3 — Name & Phone *</label>
-                  <input placeholder="Full name and phone number" onChange={e=>setF("g3",e.target.value)}/>
-                  <div className="field-note">Must be a committed applicant or existing RideTrust rider.</div>
-                </div>
-                <div className="field">
-                  <label>Valid Photo ID *</label>
-                  <button className="snap-btn" style={{borderColor:"#FCA5A5",color:"#991B1B",background:"#FFF1F2"}} onClick={()=>document.getElementById("snap-id-full").click()}>
-                    <span>📷</span><span>{form.photoId?"✅ ID captured — tap to retake":"Tap to snap your ID"}</span>
-                  </button>
-                  <input id="snap-id-full" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("photoId",ev.target.result);r.readAsDataURL(f);}}/>
-                  <div className="field-note">National ID, Voter's Card, Driver's Licence, Passport or NIN slip.</div>
-                </div>
-                <button className="submit-btn" style={{background:"#991B1B"}} onClick={()=>submit("rider-full")}>Submit Full Bus / Cab Application</button>
+                {appStage===1&&(<>
+                  <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
+                  <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
+                  <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
+                  <div className="field"><label>Home Address</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
+                  <div className="field"><label>Driving Experience</label>
+                    <select onChange={e=>setF("experience",e.target.value)}>
+                      <option value="">Select</option>
+                      <option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>More than 5 years</option>
+                    </select>
+                  </div>
+                  <div className="field"><label>Referred by someone? (Optional)</label><input placeholder="Referrer's name or phone" onChange={e=>setF("referrer",e.target.value)}/></div>
+                  <button className="submit-btn" style={{background:"#991B1B"}} onClick={()=>submitStage1("rider-full")}>Continue to Step 2 →</button>
+                </>)}
+                {appStage===2&&(<>
+                  <div style={{background:"#FFF1F2",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:13,color:C.grey}}>
+                    ✅ Basic info saved. Now upload your Driver's Licence to complete your application.
+                  </div>
+                  <div className="field">
+                    <label>Valid Driver's Licence *</label>
+                    <button className="snap-btn" style={{borderColor:"#FCA5A5",color:"#991B1B",background:"#FFF1F2"}} onClick={()=>document.getElementById("snap-dl-full").click()}>
+                      <span>🪪</span><span>{form.driversLicence?"✅ Licence captured — tap to retake":"Tap to snap your Driver's Licence"}</span>
+                    </button>
+                    <input id="snap-dl-full" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("driversLicence",ev.target.result);r.readAsDataURL(f);}}/>
+                    <div className="field-note">Your valid FRSC Driver's Licence.</div>
+                  </div>
+                  <button className="submit-btn" style={{background:"#991B1B"}} onClick={()=>submitStage2("rider-full")}>Complete Full Bus Application ✓</button>
+                </>)}
               </>
             )}
 
@@ -2748,42 +2866,55 @@ export default function App(){
               <>
                 <div className="modal-h cd">🏢 Agent Application</div>
                 <div className="modal-s">Free application. No fees. RoyalTech will contact you within 48 hours.</div>
-                <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
-                <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
-                <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
-                <div className="field"><label>Home / Work Address *</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
-                <div className="field">
-                  <label>Utility Bill Photo * <span style={{color:C.grey,fontWeight:400,fontSize:11}}>(name must match ID)</span></label>
-                  <button className="snap-btn" style={{borderColor:"#FCD34D",color:C.orange,background:"#FFF7ED"}} onClick={()=>document.getElementById("snap-util").click()}>
-                    <span>📄</span><span>{form.utilityBill?"✅ Captured — tap to retake":"Tap to snap utility bill"}</span>
-                  </button>
-                  <input id="snap-util" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("utilityBill",ev.target.result);r.readAsDataURL(f);}}/>
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===1?C.blue:"#E8E5E0",color:appStage===1?C.white:C.grey}}>Step 1: Basic Info</div>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===2?C.blue:"#E8E5E0",color:appStage===2?C.white:C.grey}}>Step 2: Documents</div>
                 </div>
-                <div className="field">
-                  <label>Parking Yard Photo * <span style={{color:C.grey,fontWeight:400,fontSize:11}}>(must fit at least 10 keke)</span></label>
-                  <button className="snap-btn" style={{borderColor:"#86EFAC",color:C.green,background:"#F0FFF4"}} onClick={()=>document.getElementById("snap-park").click()}>
-                    <span>🅿️</span><span>{form.parkingPhoto?"✅ Captured — tap to retake":"Tap to snap parking yard"}</span>
-                  </button>
-                  <input id="snap-park" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("parkingPhoto",ev.target.result);r.readAsDataURL(f);}}/>
-                </div>
-                <div className="field">
-                  <label>Valid Photo ID *</label>
-                  <button className="snap-btn" style={{borderColor:"#93C5FD",color:C.blue,background:"#EFF6FF"}} onClick={()=>document.getElementById("snap-id-lma").click()}>
-                    <span>📷</span><span>{form.photoId?"✅ ID captured — tap to retake":"Tap to snap your ID"}</span>
-                  </button>
-                  <input id="snap-id-lma" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("photoId",ev.target.result);r.readAsDataURL(f);}}/>
-                </div>
-                <div className="field"><label>Tech Skills (1 = None, 5 = Very Good)</label>
-                  <select onChange={e=>setF("techSkills",e.target.value)}>
-                    <option value="">Select</option>{[1,2,3,4,5].map(n=><option key={n}>{n}</option>)}
-                  </select>
-                </div>
-                <div className="field"><label>Transport Business Experience (1 = None, 5 = Very Experienced)</label>
-                  <select onChange={e=>setF("bizExp",e.target.value)}>
-                    <option value="">Select</option>{[1,2,3,4,5].map(n=><option key={n}>{n}</option>)}
-                  </select>
-                </div>
-                <button className="submit-btn" style={{background:C.blue}} onClick={()=>submit("lma")}>Submit Agent Application</button>
+                {appStage===1&&(<>
+                  <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
+                  <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
+                  <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
+                  <div className="field"><label>Home / Work Address *</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
+                  <div className="field"><label>Tech Skills (1 = None, 5 = Very Good)</label>
+                    <select onChange={e=>setF("techSkills",e.target.value)}>
+                      <option value="">Select</option>{[1,2,3,4,5].map(n=><option key={n}>{n}</option>)}
+                    </select>
+                  </div>
+                  <div className="field"><label>Transport Business Experience (1 = None, 5 = Very Experienced)</label>
+                    <select onChange={e=>setF("bizExp",e.target.value)}>
+                      <option value="">Select</option>{[1,2,3,4,5].map(n=><option key={n}>{n}</option>)}
+                    </select>
+                  </div>
+                  <button className="submit-btn" style={{background:C.blue}} onClick={()=>submitStage1("lma")}>Continue to Step 2 →</button>
+                </>)}
+                {appStage===2&&(<>
+                  <div style={{background:"#EFF6FF",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:13,color:C.grey}}>
+                    ✅ Basic info saved. Now upload your documents to complete your application.
+                  </div>
+                  <div className="field">
+                    <label>Utility Bill Photo * <span style={{color:C.grey,fontWeight:400,fontSize:11}}>(name must match ID)</span></label>
+                    <button className="snap-btn" style={{borderColor:"#FCD34D",color:C.orange,background:"#FFF7ED"}} onClick={()=>document.getElementById("snap-util").click()}>
+                      <span>📄</span><span>{form.utilityBill?"✅ Captured — tap to retake":"Tap to snap utility bill"}</span>
+                    </button>
+                    <input id="snap-util" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("utilityBill",ev.target.result);r.readAsDataURL(f);}}/>
+                  </div>
+                  <div className="field">
+                    <label>Parking Yard Photo * <span style={{color:C.grey,fontWeight:400,fontSize:11}}>(must fit at least 10 keke)</span></label>
+                    <button className="snap-btn" style={{borderColor:"#86EFAC",color:C.green,background:"#F0FFF4"}} onClick={()=>document.getElementById("snap-park").click()}>
+                      <span>🅿️</span><span>{form.parkingPhoto?"✅ Captured — tap to retake":"Tap to snap parking yard"}</span>
+                    </button>
+                    <input id="snap-park" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("parkingPhoto",ev.target.result);r.readAsDataURL(f);}}/>
+                  </div>
+                  <div className="field">
+                    <label>Valid Photo ID *</label>
+                    <button className="snap-btn" style={{borderColor:"#93C5FD",color:C.blue,background:"#EFF6FF"}} onClick={()=>document.getElementById("snap-id-lma").click()}>
+                      <span>📷</span><span>{form.photoId?"✅ ID captured — tap to retake":"Tap to snap your ID"}</span>
+                    </button>
+                    <input id="snap-id-lma" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("photoId",ev.target.result);r.readAsDataURL(f);}}/>
+                    <div className="field-note">National ID, Voter's Card, Driver's Licence, Passport or NIN slip.</div>
+                  </div>
+                  <button className="submit-btn" style={{background:C.blue}} onClick={()=>submitStage2("lma")}>Complete Agent Application ✓</button>
+                </>)}
               </>
             )}
 
