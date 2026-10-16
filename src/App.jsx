@@ -124,8 +124,8 @@ const S = `
   /* Access page */
   .access-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:${C.black};}
   .access-card{background:${C.white};border-radius:12px;padding:36px;max-width:420px;width:100%;}
-  .access-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:32px;text-transform:uppercase;margin-bottom:4px;}
-  .access-sub{font-size:13px;color:${C.grey};margin-bottom:24px;}
+  .access-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:32px;text-transform:uppercase;margin-bottom:4px;text-align:center;}
+  .access-sub{font-size:13px;color:${C.grey};margin-bottom:24px;text-align:center;}
   .divider-text{display:flex;align-items:center;gap:12px;margin:20px 0;font-size:12px;color:${C.grey};}
   .divider-text::before,.divider-text::after{content:"";flex:1;height:1px;background:${C.lightgr};}
   .interest-btns{display:flex;flex-direction:column;gap:10px;}
