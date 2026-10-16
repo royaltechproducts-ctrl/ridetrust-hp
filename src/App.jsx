@@ -750,7 +750,8 @@ export default function App(){
             <div style={{fontSize:12,color:"#666",marginTop:4}}>Powered by RoyalTech Partnership & Investment Limited</div>
           </div>
           <div className="access-card">
-            <div className="access-title cd">Welcome to RideTrust Sales & Services.</div>
+            <div className="access-title cd">Welcome to RideTrust</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:18,textTransform:"uppercase",textAlign:"center",color:C.orange,letterSpacing:"0.06em",marginBottom:12}}>Sales & Services</div>
             <div className="access-sub" style={{marginBottom:4}}>Experience Your Best Hire Purchase Ever — with amazing discounts on the go!</div>
             <div className="access-sub">Enter your credentials to access your portal.</div>
             <div className="field"><label>Email Address</label><input type="email" placeholder="your@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))}/></div>
