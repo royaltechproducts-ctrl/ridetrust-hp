@@ -5,7 +5,7 @@ const SB_URL = "https://zlaetfkeeuxvvxrdtbqq.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpsYWV0ZmtlZXV4dnZ4cmR0YnFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzOTEwMDIsImV4cCI6MjEwNjk2NzAwMn0.RsqkPXCnAl7M3mww8x3Sk4DIfYYOsv6TBv-3LqoOX40";
 const sb = createClient(SB_URL, SB_KEY);
 const ADMIN_PASS   = "RideTrust@RoyalTech2026";
-const ADMIN_EMAIL  = "royaltechproducts@gmail.com";
+const ADMIN_EMAIL  = "ridetrusthp@gmail.com";
 const ADMIN_PHONE  = "+234 909 999 4816";
 
 const genPassword = (prefix) => {
