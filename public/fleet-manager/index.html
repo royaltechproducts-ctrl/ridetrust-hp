@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Become a RideTrust Fleet Manager — Earn Monthly Commission</title>
+
+<!-- Open Graph / WhatsApp / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ridetrust.com.ng/fleet-manager">
+<meta property="og:title" content="Become a RideTrust Fleet Manager">
+<meta property="og:description" content="Earn 5–10% monthly commission managing riders & drivers on Hire Purchase. Zero capital required. Lagos only — limited slots.">
+<meta property="og:image" content="https://ridetrust.com.ng/og-fleet-manager.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="RideTrust by RoyalTech">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Become a RideTrust Fleet Manager">
+<meta name="twitter:description" content="Earn 5–10% monthly commission managing riders & drivers on Hire Purchase. Zero capital required. Lagos only.">
+<meta name="twitter:image" content="https://ridetrust.com.ng/og-fleet-manager.jpg">
+
+<!-- WhatsApp-friendly description -->
+<meta name="description" content="Earn 5–10% monthly commission managing riders & drivers on Hire Purchase. Zero capital required. Lagos only — limited slots.">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Inter:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --navy: #0D1B2A;
+    --navy-mid: #1A2E44;
+    --card-bg: #1E2D3D;
+    --tile-bg: #142030;
+    --orange: #F97316;
+    --orange-light: #FB923C;
+    --purple: #7C3AED;
+    --purple-light: #A78BFA;
+    --gold: #FBBF24;
+    --white: #FFFFFF;
+    --text-muted: #94A3B8;
+    --text-body: #CBD5E1;
+    --border: rgba(255,255,255,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0A1628;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    padding-block: 32px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  .ad-card {
+    background: var(--navy);
+    border-radius: 20px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+  }
+
+  .ad-header {
+    background: linear-gradient(135deg, #0D1B2A 0%, #1A1040 100%);
+    padding: 28px 28px 24px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ad-header::before {
+    content: "";
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .eyebrow {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--purple-light);
+    margin-bottom: 10px;
+  }
+
+  .ad-headline {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: clamp(26px, 7vw, 34px);
+    line-height: 1.05;
+    color: var(--white);
+    text-wrap: balance;
+    margin-bottom: 14px;
+  }
+
+  .ad-headline .accent { color: var(--orange); }
+
+  .tier-sub-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .tier-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .tier-pill.captain {
+    background: rgba(124,58,237,0.18);
+    border: 1px solid rgba(124,58,237,0.4);
+    color: var(--purple-light);
+  }
+
+  .tier-pill.commander {
+    background: rgba(251,191,36,0.12);
+    border: 1px solid rgba(251,191,36,0.35);
+    color: var(--gold);
+  }
+
+  .tier-arrow-inline {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .ad-body { padding: 26px 28px 0; }
+
+  .announcement {
+    border-left: 3px solid var(--orange);
+    padding-left: 16px;
+    margin-bottom: 24px;
+  }
+
+  .announcement .big-line {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: clamp(15px, 4vw, 18px);
+    color: var(--white);
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+
+  .announcement .big-line .highlight { color: var(--orange); }
+
+  .announcement .support-line {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 0 22px;
+  }
+
+  .essay {
+    font-size: 14.5px;
+    color: var(--text-body);
+    line-height: 1.75;
+    margin-bottom: 24px;
+  }
+
+  .essay strong { color: var(--white); font-weight: 600; }
+
+  .essay .cta-line {
+    display: block;
+    margin-top: 14px;
+    font-size: 14px;
+    color: var(--orange-light);
+    font-weight: 600;
+    line-height: 1.6;
+  }
+
+  .referral-block {
+    background: var(--tile-bg);
+    border: 1px solid rgba(251,191,36,0.2);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+  }
+
+  .referral-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+
+  .referral-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .referral-row:last-child { border-bottom: none; }
+  .referral-vehicle { color: var(--text-body); }
+
+  .referral-amount {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--orange);
+  }
+
+  .referral-note {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .stat-tile {
+    background: var(--tile-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .stat-icon { font-size: 20px; display: block; margin-bottom: 7px; }
+
+  .stat-value {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: clamp(15px, 4vw, 19px);
+    color: var(--orange);
+    line-height: 1;
+    margin-bottom: 5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  .ad-footer { padding: 0 28px 28px; }
+
+  .site-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--orange);
+    margin-bottom: 14px;
+  }
+
+  .cta-btn {
+    display: block;
+    width: 100%;
+    background: var(--orange);
+    color: var(--white);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    margin-bottom: 14px;
+    transition: background 0.15s;
+  }
+
+  .cta-btn:hover { background: var(--orange-light); }
+
+  .footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-note { font-size: 11px; color: var(--text-muted); }
+
+  .footer-brand {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--white);
+  }
+</style>
+</head>
+<body>
+
+<div class="ad-card">
+
+  <!-- Header -->
+  <div class="ad-header">
+    <div class="eyebrow">RoyalTech Partnership &amp; Investment Limited</div>
+    <h1 class="ad-headline">BECOME A<br><span class="accent">RIDETRUST</span> FLEET MANAGER<br><span style="color:#FBBF24;font-size:clamp(18px,5vw,24px);letter-spacing:0.04em">FOR UP TO 10% COMMISSION</span></h1>
+    <div class="tier-sub-row">
+      <span class="tier-pill captain">⭐ Route Captain</span>
+      <span class="tier-arrow-inline">→</span>
+      <span class="tier-pill commander">🎖️ Auto-graduate to Route Commander</span>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="ad-body">
+
+    <div class="announcement">
+      <div class="big-line">RideTrust is coming with something <span class="highlight">BIG!</span></div>
+      <div class="support-line">Planning to roll out <strong style="color:var(--white)">1,000 vehicles</strong> on Hire Purchase across Lagos — and we can't do it alone.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <p class="essay">
+      We need <strong>Fleet Managers on every route</strong>. You too can bring RideTrust to your route.
+      <span class="cta-line">Become a RideTrust Fleet Manager and earn <strong>monthly commission</strong> on every rider or driver you manage for us.</span>
+    </p>
+
+    <div class="stat-row">
+      <div class="stat-tile">
+        <span class="stat-icon">💰</span>
+        <div class="stat-value">5%</div>
+        <div class="stat-label">monthly commission to start</div>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-icon">📈</span>
+        <div class="stat-value">10%</div>
+        <div class="stat-label">at Route Commander</div>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-icon">🚫</span>
+        <div class="stat-value">₦0</div>
+        <div class="stat-label">zero capital required</div>
+      </div>
+    </div>
+
+    <div class="referral-block">
+      <div class="referral-title">🎁 One-Time Referral Bonus — Per Vehicle</div>
+      <div class="referral-row">
+        <span class="referral-vehicle">🏍️ Refer a Bike rider or Dispatch rider and get</span>
+        <span class="referral-amount">₦50K – ₦100K</span>
+      </div>
+      <div class="referral-row">
+        <span class="referral-vehicle">🛺 Refer a Keke rider for Hire Purchase and get</span>
+        <span class="referral-amount">₦150,000</span>
+      </div>
+      <div class="referral-row">
+        <span class="referral-vehicle">🚗 Refer a Mini korope driver and get</span>
+        <span class="referral-amount">₦200,000</span>
+      </div>
+      <div class="referral-row">
+        <span class="referral-vehicle">🚌 Refer a Full bus / cab driver and get</span>
+        <span class="referral-amount">₦250,000</span>
+      </div>
+      <div class="referral-note">✅ Paid after referred rider takes delivery & makes their first remittance. They auto-join your fleet.</div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="ad-footer">
+    <div class="site-link">👉 ridetrust.com.ng</div>
+    <a class="cta-btn" href="https://ridetrust.com.ng" target="_blank">APPLY NOW — FREE →</a>
+    <div class="footer-row">
+      <span class="footer-note">Lagos only · Limited slots available</span>
+      <span class="footer-brand">ROYALTECH</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
