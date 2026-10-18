@@ -427,20 +427,24 @@ export default function App(){
   // full:  ₦120,000/wk → inv ₦90,000 | LMA 10%=₦12,000 | rem ₦18,000 → rt ₦9,000 | pool ₦9,000
   // *Bike LMA amount (₦4,500) is fixed per confirmed rate; lmaRate derived from sp.lma/sp.weekly for split logic
   const SPLIT = {
-    bike:  {weekly:40000,  inv:32000, lma:4500,  rt:1750,  reserve:1750},
-    keke:  {weekly:90000,  inv:65000, lma:9000,  rt:8000,  reserve:8000},
-    mini:  {weekly:90000,  inv:65000, lma:9000,  rt:8000,  reserve:8000},
-    full:  {weekly:120000, inv:90000, lma:12000, rt:9000,  reserve:9000},
+    okada:    {weekly:40000,  inv:32000, lma:4500,  rt:1750,  reserve:1750},
+    dispatch: {weekly:55000,  inv:44000, lma:6000,  rt:2500,  reserve:2500},
+    bike:     {weekly:55000,  inv:44000, lma:6000,  rt:2500,  reserve:2500}, // legacy → dispatch
+    keke:     {weekly:90000,  inv:65000, lma:9000,  rt:8000,  reserve:8000},
+    mini:     {weekly:90000,  inv:65000, lma:9000,  rt:8000,  reserve:8000},
+    full:     {weekly:120000, inv:90000, lma:12000, rt:9000,  reserve:9000},
   };
 
   // Deposit split — triggered once a rider's deposit bucket hits 100% of target
   // Buckets: D/R-D/B (Rider Discount / LMA Bonus) | RT-RPIT (Reg, Plate, Insurance, Tracker) | RT-PO (Overhead/Profit) | CR-IR (Contingency Reserve — Incentives & Rewards)
   // Deposit split — equal 25% to each of 4 buckets
   const DEPOSIT_SPLIT = {
-    bike: {target:200000,  drdb:50000,  rpit:50000,  rtpo:50000,  crir:50000},
-    keke: {target:600000,  drdb:150000, rpit:150000, rtpo:150000, crir:150000},
-    mini: {target:800000,  drdb:200000, rpit:200000, rtpo:200000, crir:200000},
-    full: {target:1000000, drdb:250000, rpit:250000, rtpo:250000, crir:250000},
+    okada:    {target:200000,  drdb:50000,  rpit:50000,  rtpo:50000,  crir:50000},
+    dispatch: {target:400000,  drdb:100000, rpit:100000, rtpo:100000, crir:100000},
+    bike:     {target:400000,  drdb:100000, rpit:100000, rtpo:100000, crir:100000}, // legacy → dispatch
+    keke:     {target:600000,  drdb:150000, rpit:150000, rtpo:150000, crir:150000},
+    mini:     {target:800000,  drdb:200000, rpit:200000, rtpo:200000, crir:200000},
+    full:     {target:1000000, drdb:250000, rpit:250000, rtpo:250000, crir:250000},
   };
 
   // Record a remittance and split into buckets
@@ -596,7 +600,7 @@ export default function App(){
       } else {
         const pwd  = genPassword("R");
         const rcode = await genUserCode("rider");
-        const vtMap = {"rider-bike":"bike","rider-keke":"keke","rider-mini":"mini","rider-full":"full"};
+        const vtMap = {"rider-okada":"okada","rider-dispatch":"dispatch","rider-bike":"dispatch","rider-keke":"keke","rider-mini":"mini","rider-full":"full"};
         const { data: newRider } = await sb.from("rt_riders").insert({
           vehicle_type: vtMap[type]||"keke",
           full_name: form.name, phone: form.phone, email: form.email,
@@ -632,7 +636,7 @@ export default function App(){
             });
           }
         }
-        const vType = {"rider-bike":"Dispatch Bike","rider-keke":"Keke Tricycle","rider-mini":"Mini Korope (4-Wheel)","rider-full":"Full Bus / Cab (4-Wheel)"}[type]||"Keke Tricycle";
+        const vType = {"rider-okada":"Okada (Motorcycle)","rider-dispatch":"Dispatch Bike","rider-bike":"Dispatch Bike","rider-keke":"Keke Tricycle","rider-mini":"Mini Korope (4-Wheel)","rider-full":"Full Bus / Cab (4-Wheel)"}[type]||"Keke Tricycle";
         await sendAdminEmail(
           `New ${vType} Stage 1 — ${form.name}`,
           `Stage 1 submitted. IDs pending.\n\nName: ${form.name}\nPhone: ${form.phone}\nEmail: ${form.email}\nAddress: ${form.address||"—"}\nExperience: ${form.experience||"—"}\nReferral Code: ${rcode}`
@@ -650,7 +654,7 @@ export default function App(){
   const submitStage2 = async type => {
     if(!stage1RiderId){ showToast("Session error. Please start over."); return; }
     const isLma = type==="lma"||type==="captain";
-    const isBike = type==="rider-bike";
+    const isBike = type==="rider-bike"||type==="rider-okada"||type==="rider-dispatch";
     try {
       if(isLma){
         await sb.from("rt_agents").update({
@@ -666,7 +670,7 @@ export default function App(){
         if(isBike) updates.riders_permit = form.ridersPermit||null;
         else updates.drivers_licence = form.driversLicence||null;
         await sb.from("rt_riders").update(updates).eq("id", stage1RiderId);
-        const vType = {"rider-bike":"Dispatch Bike","rider-keke":"Keke Tricycle","rider-mini":"Mini Korope (4-Wheel)","rider-full":"Full Bus / Cab (4-Wheel)"}[type]||"Keke Tricycle";
+        const vType = {"rider-okada":"Okada (Motorcycle)","rider-dispatch":"Dispatch Bike","rider-bike":"Dispatch Bike","rider-keke":"Keke Tricycle","rider-mini":"Mini Korope (4-Wheel)","rider-full":"Full Bus / Cab (4-Wheel)"}[type]||"Keke Tricycle";
         await sendAdminEmail(
           `${vType} Application Complete — ID uploaded`,
           `Rider ID uploaded. Application now under review.\n\nRider ID: ${stage1RiderId}`
@@ -686,10 +690,10 @@ export default function App(){
     // Capture referral attribution from URL
     const { refType, refId, dest } = parseReferral();
     try {
-      if(type==="rider-bike"||type==="rider-keke"||type==="rider-mini"||type==="rider-full"){
+      if(type==="rider-okada"||type==="rider-dispatch"||type==="rider-bike"||type==="rider-keke"||type==="rider-mini"||type==="rider-full"){
         const pwd  = genPassword("R");
         const rcode = await genUserCode("rider");
-        const vtMap = {"rider-bike":"bike","rider-keke":"keke","rider-mini":"mini","rider-full":"full"};
+        const vtMap = {"rider-okada":"okada","rider-dispatch":"dispatch","rider-bike":"dispatch","rider-keke":"keke","rider-mini":"mini","rider-full":"full"};
         const { data: newRider } = await sb.from("rt_riders").insert({
           vehicle_type: vtMap[type]||"keke",
           full_name: form.name, phone: form.phone, email: form.email,
@@ -745,7 +749,7 @@ export default function App(){
           }
         }
         // Admin notification email
-        const vType = {"rider-bike":"Dispatch Bike","rider-keke":"Keke Tricycle","rider-mini":"Mini Korope (4-Wheel)","rider-full":"Full Bus / Cab (4-Wheel)"}[type]||"Keke Tricycle";
+        const vType = {"rider-okada":"Okada (Motorcycle)","rider-dispatch":"Dispatch Bike","rider-bike":"Dispatch Bike","rider-keke":"Keke Tricycle","rider-mini":"Mini Korope (4-Wheel)","rider-full":"Full Bus / Cab (4-Wheel)"}[type]||"Keke Tricycle";
         const waMsg = `New RideTrust ${vType} Application\n\nName: ${form.name}\nPhone: ${form.phone}\nEmail: ${form.email}\nAddress: ${form.address||"—"}\nExperience: ${form.experience||"—"}\nReferral Code: ${rcode}\n\nAction Required: Review ID and update application status.`;
         await sendAdminEmail(
           `New ${vType} Application — ${form.name}`,
@@ -911,18 +915,29 @@ export default function App(){
                 {/* HP Deal */}
                 <div style={{background:C.black,borderRadius:10,padding:20,color:C.white,marginBottom:16}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:14,textTransform:"uppercase"}}>
-                    {riderPortal.vehicle_type==="bike"?"🏍️ Dispatch Bike":"🛺 Keke Tricycle"} — Your HP Deal
+                    {riderPortal.vehicle_type==="okada"?"🏍️ Okada (Motorcycle)":riderPortal.vehicle_type==="dispatch"||riderPortal.vehicle_type==="bike"?"🏍️ Dispatch Bike":"🛺 Keke Tricycle"} — Your HP Deal
                   </div>
-                  {riderPortal.vehicle_type==="bike"?(<>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP Package Value</span><strong>₦2,000,000 – ₦4,690,000</strong></div>
+                  {riderPortal.vehicle_type==="okada"?(<>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP Package Value</span><strong>₦2,000,000</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Insurance & Plate License Reg</span><strong>Inclusive</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Initial deposit</span><strong style={{color:C.orange}}>₦200,000 – ₦400,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Initial deposit</span><strong style={{color:C.orange}}>₦200,000</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Deposit spread</span><strong>3 months</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Weekly remittance</span><strong>₦40,000 – ₦55,000 / week</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>45 – 78 weeks</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total HP payments</span><strong>₦1,800,000 – ₦4,290,000</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.orange}}>₦2,000,000 – ₦4,690,000</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦50,000 – ₦100,000 / Referral of new Bike Applicant</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Weekly remittance</span><strong>₦40,000 / week</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>45 weeks</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total HP payments</span><strong>₦1,800,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.orange}}>₦2,000,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦50,000 / Referral of new Okada Applicant</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦200,000 / Referral of new Keke Applicant</strong></div>
+                  </>):riderPortal.vehicle_type==="dispatch"||riderPortal.vehicle_type==="bike"?(<>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP Package Value</span><strong>₦4,690,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Insurance & Plate License Reg</span><strong>Inclusive</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Initial deposit</span><strong style={{color:C.orange}}>₦400,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Deposit spread</span><strong>3 months</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Weekly remittance</span><strong>₦55,000 / week</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>78 weeks</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total HP payments</span><strong>₦4,290,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.orange}}>₦4,690,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦100,000 / Referral of new Dispatch Applicant</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦200,000 / Referral of new Keke Applicant</strong></div>
                   </>):(<>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP Package Value</span><strong>₦7,620,000</strong></div>
@@ -973,7 +988,7 @@ export default function App(){
                     <div style={{background:"#FFF7ED",border:"1.5px solid #FCD34D",borderRadius:10,padding:20}}>
                       <div style={{fontWeight:800,fontSize:14,color:"#92400E",marginBottom:10}}>💰 Pay Your Deposit to Commit</div>
                       <div style={{fontSize:13,color:"#92400E",lineHeight:1.8,marginBottom:12}}>
-                        {{bike:"Bike deposit: ₦200,000",keke:"Keke deposit: ₦600,000",mini:"Mini (Korope) deposit: ₦800,000",full:"Full Bus/Cab deposit: ₦1,000,000"}[riderPortal.vehicle_type]||"Deposit amount per vehicle type"} — spread over 3 months max. Non-refundable except where investor matching takes more than 30 days.
+                        {{okada:"Okada deposit: ₦200,000",dispatch:"Dispatch Bike deposit: ₦400,000",bike:"Dispatch Bike deposit: ₦400,000",keke:"Keke deposit: ₦600,000",mini:"Mini (Korope) deposit: ₦800,000",full:"Full Bus/Cab deposit: ₦1,000,000"}[riderPortal.vehicle_type]||"Deposit amount per vehicle type"} — spread over 3 months max. Non-refundable except where investor matching takes more than 30 days.
                       </div>
                       <div style={{fontSize:13,color:"#92400E",lineHeight:1.9}}>
                         <strong>Account Name:</strong> RoyalTech Partnership & Investment Limited<br/>
@@ -1097,7 +1112,7 @@ export default function App(){
                       <div class="field"><label>Applicant Phone Number</label><div class="line"></div></div>
                       <div class="field"><label>Applicant Email Address</label><div class="line"></div></div>
                       <div class="field"><label>Applicant Referral Code</label><div class="line">${riderPortal.referral_code}</div></div>
-                      <div class="field"><label>Vehicle Type Applied For</label><div class="line">${{bike:"Dispatch Bike (HP Value: ₦2,000,000 – ₦4,690,000)",keke:"Keke Tricycle (HP Value: ₦7,620,000)",mini:"Mini Korope 4-Wheel (HP Value: ₦12,500,000)",full:"Full Bus / Cab 4-Wheel (HP Value: ₦19,240,000)"}[riderPortal.vehicle_type]||riderPortal.vehicle_type}</div></div>
+                      <div class="field"><label>Vehicle Type Applied For</label><div class="line">${{okada:"Okada / Motorcycle (HP Value: ₦2,000,000)",dispatch:"Dispatch Bike (HP Value: ₦4,690,000)",bike:"Dispatch Bike (HP Value: ₦4,690,000)",keke:"Keke Tricycle (HP Value: ₦7,620,000)",mini:"Mini Korope 4-Wheel (HP Value: ₦12,500,000)",full:"Full Bus / Cab 4-Wheel (HP Value: ₦19,240,000)"}[riderPortal.vehicle_type]||riderPortal.vehicle_type}</div></div>
                     </div>
                     <div class="section"><h3>Guarantor Details (to be filled by the guarantor)</h3>
                       <div class="field"><label>Full Name of Guarantor</label><div class="line"></div></div>
@@ -1356,7 +1371,8 @@ export default function App(){
                   <div style={{fontSize:12,color:C.grey,marginBottom:16}}>One-time bonuses when you refer a rider who takes delivery and makes their first remittance.</div>
                   <div style={{background:"#142030",borderRadius:10,padding:16,marginBottom:16}}>
                     {[
-                      {icon:"🏍️",label:"Bike / Dispatch Rider",amount:"₦50K – ₦100K"},
+                      {icon:"🏍️",label:"Okada Rider",amount:"₦50,000"},
+                      {icon:"🏍️",label:"Dispatch Bike Rider",amount:"₦100,000"},
                       {icon:"🛺",label:"Keke Tricycle Rider",amount:"₦150,000"},
                       {icon:"🚗",label:"Mini Korope Driver",amount:"₦200,000"},
                       {icon:"🚌",label:"Full Bus / Cab Driver",amount:"₦250,000"},
@@ -1421,7 +1437,7 @@ export default function App(){
               const inv = investorPortal[0]||{};
               const totalUnits = investorPortal.reduce((s,r)=>s+(r.units||1),0);
               // Weekly returns by package type
-              const wklyRet = {bike:32000,keke:65000,mini:65000,full:90000};
+              const wklyRet = {okada:32000,dispatch:44000,bike:44000,keke:65000,mini:65000,full:90000};
               const totalWeekly = investorPortal.reduce((s,r)=>s+(wklyRet[r.package_type]||0)*(r.units||1),0);
               const totalAccrued = investorPortal.reduce((s,r)=>s+(r.accrued_return||0),0);
 
@@ -1472,7 +1488,7 @@ export default function App(){
                       <div key={i} style={{padding:"12px 0",borderBottom:i<investorPortal.length-1?"1px solid "+C.lightgr:"none"}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                           <div>
-                            <div style={{fontWeight:700,fontSize:13,color:C.black}}>{{bike:"🏍️ Dispatch Bike",keke:"🛺 Keke Tricycle",mini:"🚗 Mini Korope",full:"🚌 Full Bus/Cab"}[pkg.package_type]||pkg.package_type} × {pkg.units||1}</div>
+                            <div style={{fontWeight:700,fontSize:13,color:C.black}}>{{okada:"🏍️ Okada",dispatch:"🏍️ Dispatch Bike",bike:"🏍️ Dispatch Bike",keke:"🛺 Keke Tricycle",mini:"🚗 Mini Korope",full:"🚌 Full Bus/Cab"}[pkg.package_type]||pkg.package_type} × {pkg.units||1}</div>
                             <div style={{fontSize:11,color:C.grey,marginTop:2}}>Code: {pkg.referral_code||"—"} · Status: <span style={{color:pkg.status==="active"?C.green:C.orange,fontWeight:600,textTransform:"uppercase"}}>{pkg.status||"pending"}</span></div>
                           </div>
                           <div style={{textAlign:"right"}}>
@@ -1490,8 +1506,8 @@ export default function App(){
               {investorPortalTab==="packages"&&(
                 <div>
                   {investorPortal.map((pkg,i)=>{
-                    const pkgLabels = {bike:"Dispatch Bike",keke:"Keke Tricycle",mini:"Mini Korope (4-Wheel)",full:"Full Bus / Cab (4-Wheel)"};
-                    const pkgValues = {bike:"₦2,000,000 – ₦4,690,000",keke:"₦7,620,000",mini:"₦12,500,000",full:"₦19,240,000"};
+                    const pkgLabels = {okada:"Okada (Motorcycle)",dispatch:"Dispatch Bike",bike:"Dispatch Bike",keke:"Keke Tricycle",mini:"Mini Korope (4-Wheel)",full:"Full Bus / Cab (4-Wheel)"};
+                    const pkgValues = {okada:"₦2,000,000",dispatch:"₦4,690,000",bike:"₦4,690,000",keke:"₦7,620,000",mini:"₦12,500,000",full:"₦19,240,000"};
                     const weeklyRet = wklyRet[pkg.package_type]||0;
                     const annualRet = weeklyRet * 52;
                     return (
@@ -1702,8 +1718,8 @@ export default function App(){
                           // Update captain's fleet_count
                           const newFleetCount = riders.filter(rd=>rd.captain_id===captainId&&rd.id!==r.id).length + 1;
                           await sb.from("rt_agents").update({fleet_count:newFleetCount}).eq("id",captainId);
-                          const vType = r.vehicle_type==="bike"?"Dispatch Bike":r.vehicle_type==="keke"?"Keke Tricycle":r.vehicle_type==="mini"?"Mini Korope":"Full Bus / Cab";
-                          const dep = {bike:"₦200,000",keke:"₦600,000",mini:"₦800,000",full:"₦1,000,000"}[r.vehicle_type]||"₦600,000";
+                          const vType = r.vehicle_type==="okada"?"Okada (Motorcycle)":r.vehicle_type==="dispatch"||r.vehicle_type==="bike"?"Dispatch Bike":r.vehicle_type==="keke"?"Keke Tricycle":r.vehicle_type==="mini"?"Mini Korope":"Full Bus / Cab";
+                          const dep = {okada:"₦200,000",dispatch:"₦400,000",bike:"₦400,000",keke:"₦600,000",mini:"₦800,000",full:"₦1,000,000"}[r.vehicle_type]||"₦600,000";
                           const waMsg = `Dear ${r.full_name},\n\nYour RideTrust HP application has been reviewed and approved. You have been assigned a Route Captain who will monitor and support you on the road.\n\nYour Route Captain:\nName: ${cap?.full_name||""}\nPhone: ${cap?.phone||""}\nEmail: ${cap?.email||""}\n\nYou may now proceed to:\n1. Make your referrals to secure guarantors\n2. Pay your initial deposit of ${dep} (spread over 3 months max)\n\nPayment Details:\nAccount Name: RoyalTech Partnership & Investment Limited\nBank: Zenith Bank\nAccount Number: 1016621205\nReference: ${r.referral_code}\n\nAfter each deposit payment, send proof via WhatsApp to +234 909 999 4816 with your reference code.\n\nRideTrust HP | RoyalTech`;
                           console.log("ADMIN — SEND THIS WHATSAPP TO "+r.phone+":\n"+waMsg);
                           await loadData();
@@ -1723,8 +1739,8 @@ export default function App(){
                           `Confirm full deposit received from ${r.full_name} and update to Committed Applicant?`,
                           async()=>{
                             await sb.from("rt_riders").update({rider_status:"committed_applicant"}).eq("id",r.id);
-                            const vType = r.vehicle_type==="bike"?"Dispatch Bike":"Keke Tricycle";
-                            const totalHP = {bike:"₦2,000,000",keke:"₦7,620,000",mini:"₦12,500,000",full:"₦19,240,000"}[r.vehicle_type]||"₦7,620,000";
+                            const vType = r.vehicle_type==="okada"?"Okada (Motorcycle)":r.vehicle_type==="dispatch"||r.vehicle_type==="bike"?"Dispatch Bike":"Keke Tricycle";
+                            const totalHP = {okada:"₦2,000,000",dispatch:"₦4,690,000",bike:"₦4,690,000",keke:"₦7,620,000",mini:"₦12,500,000",full:"₦19,240,000"}[r.vehicle_type]||"₦7,620,000";
                             const waMsg = `Dear ${r.full_name},\n\nYour deposit payment for the ${vType} hire purchase has been received and confirmed. You are now a COMMITTED APPLICANT on RideTrust HP.\n\nNext Steps:\n- RoyalTech will now match you with a Sponsoring Investor within 14 working days\n- Once matched, your brand new ${vType} will be delivered to you\n- If no investor match is made within 30 days, you are entitled to request a full refund of your deposit\n\nYour HP Details:\nTotal to own: ${totalHP}\nWeekly remittance starts from delivery date every Monday\n\nYour referral code: ${r.referral_code}\nKeep referring to earn discounts on your HP balance.\n\nRideTrust HP | RoyalTech`;
                             console.log("ADMIN — SEND THIS WHATSAPP TO "+r.phone+":\n"+waMsg);
                             await loadData();
@@ -1744,7 +1760,7 @@ export default function App(){
                           `Confirm HP balance cleared for ${r.full_name} and invite to ownership ceremony?`,
                           async()=>{
                             await sb.from("rt_riders").update({rider_status:"ownership_transferred",app_status:"completed"}).eq("id",r.id);
-                            const vType = r.vehicle_type==="bike"?"Dispatch Bike":"Keke Tricycle";
+                            const vType = r.vehicle_type==="okada"?"Okada (Motorcycle)":r.vehicle_type==="dispatch"||r.vehicle_type==="bike"?"Dispatch Bike":"Keke Tricycle";
                             const waMsg = `Dear ${r.full_name},\n\nCongratulations! 🎉\n\nYour Hire Purchase balance for your ${vType} has been fully cleared. You have successfully completed your HP agreement with RoyalTech Partnership & Investment Limited.\n\nYou are hereby invited to the ASSET CHANGE OF OWNERSHIP CEREMONY where the vehicle will be officially transferred to your name.\n\nPlease contact RoyalTech to schedule your ceremony:\nPhone: +234 806 163 1222\nWhatsApp: +234 909 999 4816\n\nThank you for being a valued RideTrust HP partner.\n\nRideTrust HP | RoyalTech`;
                             console.log("ADMIN — SEND THIS WHATSAPP TO "+r.phone+":\n"+waMsg);
                             await loadData();
@@ -2205,7 +2221,7 @@ export default function App(){
                         const held = r.deposit_paid||0;
                         const pct  = Math.min(100, Math.round(held/ds.target*100));
                         const full = held>=ds.target;
-                        const vtLabel = {bike:"Dispatch Bike 🏍️",keke:"Keke Tricycle 🛺",mini:"Mini (Korope) 🚗",full:"Full Bus/Cab 🚌"}[r.vehicle_type]||r.vehicle_type;
+                        const vtLabel = {okada:"Okada 🏍️",dispatch:"Dispatch Bike 🏍️",bike:"Dispatch Bike 🏍️",keke:"Keke Tricycle 🛺",mini:"Mini (Korope) 🚗",full:"Full Bus/Cab 🚌"}[r.vehicle_type]||r.vehicle_type;
                         return(
                           <div key={r.id} style={{background:C.white,borderRadius:10,padding:18,marginBottom:12,border:"2px solid "+(full?"#16A34A":C.lightgr)}}>
                             <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:10}}>
@@ -2670,7 +2686,8 @@ export default function App(){
             <div className="hero-sub" style={{color:"#CCC"}}>Best Hire Purchase Ever</div>
             <p style={{fontSize:15,color:"#AAA",maxWidth:520,margin:"0 auto 36px",lineHeight:1.8}}>Brand new dispatch bike or keke tricycle. Fixed deposit. Weekly payments. Full ownership at the end. No bank. No wahala.</p>
             <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
-              <button className="btn btn-orange" onClick={()=>openModal("rider-bike")}>🏍️ Apply for Bike</button>
+              <button className="btn btn-orange" onClick={()=>openModal("rider-okada")}>🏍️ Apply — Okada</button>
+              <button className="btn btn-orange" style={{opacity:.85}} onClick={()=>openModal("rider-dispatch")}>🏍️ Apply — Dispatch Bike</button>
               <button className="btn" style={{background:"#1A1A1A",color:C.white,border:"1.5px solid #333"}} onClick={()=>openModal("rider-keke")}>🛺 Apply for Keke</button>
               <button className="btn" style={{background:"#333",color:"#AAA",border:"1.5px solid #555",fontSize:13}} onClick={()=>navigate("ride4w")}>Looking for Korope / Bus / Cab? →</button>
             </div>
@@ -2693,26 +2710,30 @@ export default function App(){
                     <div className="v-desc">Brand new Bajaj, TVS or Qlink 200cc. Insurance and plate registration included.</div>
                   </div>
                   <div className="v-body">
-                    <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val" style={{color:C.grey}}>₦1,200,000 – ₦3,000,000</span></div>
-                    <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦2,000,000 – ₦4,690,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">Inclusive</span></div>
-                    <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val hi">₦200,000 – ₦400,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Deposit spread</span><span className="v-val">3 months</span></div>
-                    <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦40,000 – ₦55,000 / week</span></div>
-                    <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">45 – 78 weeks</span></div>
-                    <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦1,800,000 – ₦4,290,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val hi">₦2,000,000 – ₦4,690,000</span></div>
-                    <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
-                      <div style={{fontSize:11,fontWeight:700,color:C.orange,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Discounts</div>
-                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦50,000 – ₦100,000 discount off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦150,000 discount off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 discount off your HP</span></div>
-                      <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 discount off your HP</span></div>
-                      <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#166534",lineHeight:1.6}}>
-                        Each confirmed referral reduces your outstanding balance — same ₦40,000/week, fewer weeks. No limit on referrals.
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                      <div style={{background:"#FFF7ED",border:"1.5px solid #FCD34D",borderRadius:8,padding:12}}>
+                        <div style={{fontWeight:800,fontSize:12,color:C.orange,marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>🏍️ Okada</div>
+                        <div style={{fontSize:11,color:"#555",lineHeight:1.7}}>HP Value: <strong>₦2,000,000</strong><br/>Deposit: <strong>₦200,000</strong><br/>Weekly: <strong>₦40,000</strong><br/>Term: <strong>45 weeks</strong><br/>Total to own: <strong>₦2,000,000</strong></div>
+                        <button className="btn btn-orange btn-full" style={{marginTop:8,padding:"7px 0",fontSize:12}} onClick={()=>openModal("rider-okada")}>Apply — Okada</button>
+                      </div>
+                      <div style={{background:"#F0F4FF",border:"1.5px solid #93C5FD",borderRadius:8,padding:12}}>
+                        <div style={{fontWeight:800,fontSize:12,color:C.blue,marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>🏍️ Dispatch Bike</div>
+                        <div style={{fontSize:11,color:"#555",lineHeight:1.7}}>HP Value: <strong>₦4,690,000</strong><br/>Deposit: <strong>₦400,000</strong><br/>Weekly: <strong>₦55,000</strong><br/>Term: <strong>78 weeks</strong><br/>Total to own: <strong>₦4,690,000</strong></div>
+                        <button className="btn btn-full" style={{marginTop:8,padding:"7px 0",fontSize:12,background:C.blue,color:C.white}} onClick={()=>openModal("rider-dispatch")}>Apply — Dispatch</button>
                       </div>
                     </div>
-                    <button className="btn btn-orange btn-full" onClick={()=>openModal("rider-bike")}>Apply for This Bike</button>
+                    <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">Inclusive (both types)</span></div>
+                    <div className="v-row"><span className="v-lbl">Deposit spread</span><span className="v-val">3 months</span></div>
+                    <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.orange,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Discounts</div>
+                      <div className="v-row"><span className="v-lbl">Refer an Okada rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦50,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Dispatch rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦100,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦150,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 discount off your HP</span></div>
+                      <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:6,padding:"8px 10px",marginTop:6,fontSize:11,color:"#166534",lineHeight:1.6}}>
+                        Each confirmed referral reduces your outstanding balance. No limit on referrals.
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -2779,7 +2800,8 @@ export default function App(){
               <div className="ref-box">
                 <p style={{color:"#AAA",fontSize:14,lineHeight:1.8,marginBottom:16}}>For every person you successfully refer to RideTrust, you receive a discount off your own outstanding HP balance. The more you refer, the less you owe.</p>
                 <div className="ref-grid">
-                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Bike rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦50,000 – ₦100,000</strong> taken off your own outstanding HP balance (amount depends on bike type — Okada or Dispatch) as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer an Okada rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦50,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Dispatch Bike rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦100,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🛺 Refer a Keke rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦150,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🚐 Refer a Minibus driver for Hire Purchase</div><div className="ref-item-b">Get <strong>₦200,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🚌 Refer a Full Bus / Cab driver for Hire Purchase</div><div className="ref-item-b">Get <strong>₦250,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
@@ -2797,7 +2819,8 @@ export default function App(){
             <h2 className="cta-h cd">Ready to Own Your Bike or Keke?</h2>
             <p className="cta-s">No bank. No wahala. Brand new. Yours at the end.</p>
             <div className="cta-btns">
-              <button className="btn btn-white" onClick={()=>openModal("rider-bike")}>🏍️ Apply for Bike</button>
+              <button className="btn btn-white" onClick={()=>openModal("rider-okada")}>🏍️ Apply — Okada</button>
+              <button className="btn btn-white" style={{opacity:.85}} onClick={()=>openModal("rider-dispatch")}>🏍️ Apply — Dispatch Bike</button>
               <button className="btn btn-black" onClick={()=>openModal("rider-keke")}>🛺 Apply for Keke</button>
               <button className="btn" style={{background:"#1A1A1A",color:"#AAA",border:"1.5px solid #555"}} onClick={()=>navigate("ride4w")}>Looking for Korope / Bus / Cab? →</button>
             </div>
@@ -2931,7 +2954,8 @@ export default function App(){
               <div className="ref-box">
                 <p style={{color:"#AAA",fontSize:14,lineHeight:1.8,marginBottom:16}}>For every person you successfully refer to RideTrust, you receive a discount off your own outstanding HP balance. The more you refer, the less you owe.</p>
                 <div className="ref-grid">
-                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Bike rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦50,000 – ₦100,000</strong> taken off your own outstanding HP balance (amount depends on bike type — Okada or Dispatch) as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer an Okada rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦50,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Dispatch Bike rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦100,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🛺 Refer a Keke rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦150,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🚐 Refer a Minibus driver for Hire Purchase</div><div className="ref-item-b">Get <strong>₦200,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🚌 Refer a Full Bus / Cab driver for Hire Purchase</div><div className="ref-item-b">Get <strong>₦250,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
@@ -3120,7 +3144,8 @@ export default function App(){
               <p className="sec-body">As a Route Captain, you need to understand what your riders and drivers are on — their weekly targets, their deposit obligations, and their ownership timeline.</p>
               <div className="v-grid" style={{marginTop:24}}>
                 {[
-                  {e:"🏍️",n:"Dispatch Bike",dep:"₦200,000 – ₦400,000",wkly:"₦40,000 – ₦55,000/week",term:"45 – 78 weeks",cap5:"₦2,000 – ₦2,750/week",cap10:"₦4,000 – ₦5,500/week"},
+                  {e:"🏍️",n:"Okada (Motorcycle)",dep:"₦200,000",wkly:"₦40,000/week",term:"45 weeks",cap5:"₦2,000/week",cap10:"₦4,000/week"},
+                  {e:"🏍️",n:"Dispatch Bike",dep:"₦400,000",wkly:"₦55,000/week",term:"78 weeks",cap5:"₦2,750/week",cap10:"₦5,500/week"},
                   {e:"🛺",n:"Keke Tricycle",dep:"₦600,000",wkly:"₦90,000/week",term:"78 weeks",cap5:"₦4,500/week",cap10:"₦9,000/week"},
                   {e:"🚗",n:"Mini Korope",dep:"₦800,000",wkly:"₦90,000/week",term:"130 weeks",cap5:"₦4,500/week",cap10:"₦9,000/week"},
                   {e:"🚌",n:"Full Bus / Cab",dep:"₦1,000,000",wkly:"₦120,000/week",term:"152 weeks",cap5:"₦6,000/week",cap10:"₦12,000/week"},
@@ -3322,12 +3347,11 @@ export default function App(){
           <div className="modal">
             <button className="modal-close" onClick={()=>setModal(null)}>×</button>
 
-            {/* Rider — Bike */}
-            {modal==="rider-bike"&&(
+            {/* Rider — Okada */}
+            {modal==="rider-okada"&&(
               <>
-                <div className="modal-h cd">🏍️ Bike Application</div>
-                <div className="modal-s">Dispatch Bike — ₦200,000 deposit · ₦40,000/week × 45 weeks<br/>RoyalTech will contact you within 24 hours.</div>
-                {/* Stage indicator */}
+                <div className="modal-h cd">🏍️ Okada Application</div>
+                <div className="modal-s">Okada (Personal Motorcycle) — ₦200,000 deposit · ₦40,000/week × 45 weeks<br/>RoyalTech will contact you within 24 hours.</div>
                 <div style={{display:"flex",gap:8,marginBottom:16}}>
                   <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===1?C.orange:"#E8E5E0",color:appStage===1?C.white:C.grey}}>Step 1: Basic Info</div>
                   <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===2?C.orange:"#E8E5E0",color:appStage===2?C.white:C.grey}}>Step 2: Documents</div>
@@ -3344,7 +3368,7 @@ export default function App(){
                     </select>
                   </div>
                   <div className="field"><label>Referred by someone? (Optional)</label><input placeholder="Referrer's name or phone" onChange={e=>setF("referrer",e.target.value)}/></div>
-                  <button className="submit-btn" style={{background:C.orange}} onClick={()=>submitStage1("rider-bike")}>Continue to Step 2 →</button>
+                  <button className="submit-btn" style={{background:C.orange}} onClick={()=>submitStage1("rider-okada")}>Continue to Step 2 →</button>
                 </>)}
                 {appStage===2&&(<>
                   <div style={{background:"#FFF7ED",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:13,color:C.grey}}>
@@ -3352,21 +3376,69 @@ export default function App(){
                   </div>
                   <div className="field">
                     <label>Valid Rider's Permit *</label>
-                    <button className="snap-btn" style={{borderColor:"#FCD34D",color:C.orange,background:"#FFF7ED"}} onClick={()=>document.getElementById("snap-permit-bike").click()}>
+                    <button className="snap-btn" style={{borderColor:"#FCD34D",color:C.orange,background:"#FFF7ED"}} onClick={()=>document.getElementById("snap-permit-okada").click()}>
                       <span>🪪</span><span>{form.ridersPermit?"✅ Permit captured — tap to retake":"Tap to snap your Rider's Permit"}</span>
                     </button>
-                    <input id="snap-permit-bike" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("ridersPermit",ev.target.result);r.readAsDataURL(f);}}/>
+                    <input id="snap-permit-okada" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("ridersPermit",ev.target.result);r.readAsDataURL(f);}}/>
                     <div className="field-note">Your valid FRSC Rider's Permit / Motorcycle Licence.</div>
                   </div>
                   <div className="field">
                     <label>Valid Govt-Issued Photo ID *</label>
-                    <button className="snap-btn" style={{borderColor:"#93C5FD",color:C.blue,background:"#EFF6FF"}} onClick={()=>document.getElementById("snap-id-bike").click()}>
+                    <button className="snap-btn" style={{borderColor:"#93C5FD",color:C.blue,background:"#EFF6FF"}} onClick={()=>document.getElementById("snap-id-okada").click()}>
                       <span>📷</span><span>{form.photoId?"✅ ID captured — tap to retake":"Tap to snap your Photo ID"}</span>
                     </button>
-                    <input id="snap-id-bike" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("photoId",ev.target.result);r.readAsDataURL(f);}}/>
+                    <input id="snap-id-okada" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("photoId",ev.target.result);r.readAsDataURL(f);}}/>
                     <div className="field-note">National ID, Voter's Card, Passport or NIN slip.</div>
                   </div>
-                  <button className="submit-btn" style={{background:C.orange}} onClick={()=>submitStage2("rider-bike")}>Complete Bike Application ✓</button>
+                  <button className="submit-btn" style={{background:C.orange}} onClick={()=>submitStage2("rider-okada")}>Complete Okada Application ✓</button>
+                </>)}
+              </>
+            )}
+
+            {/* Rider — Dispatch Bike */}
+            {modal==="rider-dispatch"&&(
+              <>
+                <div className="modal-h cd">🏍️ Dispatch Bike Application</div>
+                <div className="modal-s">Dispatch Bike (Delivery) — ₦400,000 deposit · ₦55,000/week × 78 weeks<br/>RoyalTech will contact you within 24 hours.</div>
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===1?C.orange:"#E8E5E0",color:appStage===1?C.white:C.grey}}>Step 1: Basic Info</div>
+                  <div style={{flex:1,padding:"6px 0",textAlign:"center",borderRadius:6,fontSize:12,fontWeight:700,background:appStage===2?C.orange:"#E8E5E0",color:appStage===2?C.white:C.grey}}>Step 2: Documents</div>
+                </div>
+                {appStage===1&&(<>
+                  <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
+                  <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
+                  <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
+                  <div className="field"><label>Home Address</label><input placeholder="Street, Area, State" onChange={e=>setF("address",e.target.value)}/></div>
+                  <div className="field"><label>Riding Experience</label>
+                    <select onChange={e=>setF("experience",e.target.value)}>
+                      <option value="">Select</option>
+                      <option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>More than 5 years</option>
+                    </select>
+                  </div>
+                  <div className="field"><label>Referred by someone? (Optional)</label><input placeholder="Referrer's name or phone" onChange={e=>setF("referrer",e.target.value)}/></div>
+                  <button className="submit-btn" style={{background:C.orange}} onClick={()=>submitStage1("rider-dispatch")}>Continue to Step 2 →</button>
+                </>)}
+                {appStage===2&&(<>
+                  <div style={{background:"#FFF7ED",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:13,color:C.grey}}>
+                    ✅ Basic info saved. Now upload your documents to complete your application.
+                  </div>
+                  <div className="field">
+                    <label>Valid Rider's Permit *</label>
+                    <button className="snap-btn" style={{borderColor:"#FCD34D",color:C.orange,background:"#FFF7ED"}} onClick={()=>document.getElementById("snap-permit-dispatch").click()}>
+                      <span>🪪</span><span>{form.ridersPermit?"✅ Permit captured — tap to retake":"Tap to snap your Rider's Permit"}</span>
+                    </button>
+                    <input id="snap-permit-dispatch" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("ridersPermit",ev.target.result);r.readAsDataURL(f);}}/>
+                    <div className="field-note">Your valid FRSC Rider's Permit / Motorcycle Licence.</div>
+                  </div>
+                  <div className="field">
+                    <label>Valid Govt-Issued Photo ID *</label>
+                    <button className="snap-btn" style={{borderColor:"#93C5FD",color:C.blue,background:"#EFF6FF"}} onClick={()=>document.getElementById("snap-id-dispatch").click()}>
+                      <span>📷</span><span>{form.photoId?"✅ ID captured — tap to retake":"Tap to snap your Photo ID"}</span>
+                    </button>
+                    <input id="snap-id-dispatch" type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setF("photoId",ev.target.result);r.readAsDataURL(f);}}/>
+                    <div className="field-note">National ID, Voter's Card, Passport or NIN slip.</div>
+                  </div>
+                  <button className="submit-btn" style={{background:C.orange}} onClick={()=>submitStage2("rider-dispatch")}>Complete Dispatch Bike Application ✓</button>
                 </>)}
               </>
             )}
