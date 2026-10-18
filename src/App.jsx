@@ -260,7 +260,7 @@ export default function App(){
     if(dest && DEST_MAP[dest]) return DEST_MAP[dest];
     const h = window.location.hash.replace(/^#\/?/,"").toLowerCase();
     const p = window.location.pathname.replace(/\//g,"").toLowerCase();
-    const valid = ["ride","captain","invest","agent"];
+    const valid = ["ride","ride4w","captain","invest","agent"];
     const mapped = {agent:"captain"};
     const hv = valid.includes(h) ? (mapped[h]||h) : null;
     const pv = valid.includes(p) ? (mapped[p]||p) : null;
@@ -765,12 +765,16 @@ export default function App(){
             <div style={{fontSize:12,color:C.grey,marginBottom:12,textAlign:"center"}}>Click on your interest for more information and to sign up</div>
             <div className="interest-btns">
               <button className="int-btn" onClick={()=>navigate("ride")}>
-                <span className="int-icon">🛺</span>
-                <div><div className="int-label">Sign Up to Ride on Hire Purchase</div><div className="int-sub">Brand new bike or keke — own it fully</div></div>
+                <span className="int-icon">🏍️</span>
+                <div><div className="int-label">Bikes & Keke — Hire Purchase</div><div className="int-sub">Brand new dispatch bike or keke — own it fully</div></div>
+              </button>
+              <button className="int-btn" onClick={()=>navigate("ride4w")}>
+                <span className="int-icon">🚌</span>
+                <div><div className="int-label">Mini Korope & Hiace / Cab — Hire Purchase</div><div className="int-sub">4-wheel vehicles — mini korope, full bus or cab</div></div>
               </button>
               <button className="int-btn" onClick={()=>navigate("agent")}>
                 <span className="int-icon">🏢</span>
-                <div><div className="int-label">Sign Up to Become a Local Managing Agent</div><div className="int-sub">Manage riders. Earn weekly commissions.</div></div>
+                <div><div className="int-label">Sign Up to Become a Local Managing Agent</div><div className="int-sub">Manage riders on your route. Earn monthly commission.</div></div>
               </button>
               <button className="int-btn" onClick={()=>navigate("invest")}>
                 <span className="int-icon">💰</span>
@@ -2205,7 +2209,7 @@ export default function App(){
         </div>
       )}
 
-      {/* ══ RIDER PAGE (/ride) ════════════════════════════════ */}
+      {/* ══ RIDER PAGE — Bikes & Keke (/ride) ════════════════ */}
       {page==="ride"&&(
         <>
           <nav>
@@ -2216,14 +2220,13 @@ export default function App(){
           {/* Hero */}
           <div style={{background:C.black,padding:"72px 24px 60px",textAlign:"center"}}>
             <div className="hero-eyebrow" style={{background:C.orange,color:C.white}}>RoyalTech Partnership & Investment Limited</div>
-            <h1 className="hero-h1 cd" style={{color:C.white}}>Ride To <span style={{color:C.orange}}>Own</span></h1>
+            <h1 className="hero-h1 cd" style={{color:C.white}}>Bikes & Keke — <span style={{color:C.orange}}>Ride To Own</span></h1>
             <div className="hero-sub" style={{color:"#CCC"}}>Best Hire Purchase Ever</div>
-            <p style={{fontSize:15,color:"#AAA",maxWidth:520,margin:"0 auto 36px",lineHeight:1.8}}>Brand new bike, keke, korope or bus. Fixed deposit. Weekly payments. Full ownership at the end. No bank. No wahala.</p>
+            <p style={{fontSize:15,color:"#AAA",maxWidth:520,margin:"0 auto 36px",lineHeight:1.8}}>Brand new dispatch bike or keke tricycle. Fixed deposit. Weekly payments. Full ownership at the end. No bank. No wahala.</p>
             <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
               <button className="btn btn-orange" onClick={()=>openModal("rider-bike")}>🏍️ Apply for Bike</button>
               <button className="btn" style={{background:"#1A1A1A",color:C.white,border:"1.5px solid #333"}} onClick={()=>openModal("rider-keke")}>🛺 Apply for Keke</button>
-              <button className="btn" style={{background:"#4338CA",color:C.white}} onClick={()=>openModal("rider-mini")}>🚗 Apply for Mini Korope</button>
-              <button className="btn" style={{background:"#991B1B",color:C.white}} onClick={()=>openModal("rider-full")}>🚌 Apply for Hiace Bus / Cab</button>
+              <button className="btn" style={{background:"#333",color:"#AAA",border:"1.5px solid #555",fontSize:13}} onClick={()=>navigate("ride4w")}>Looking for Korope / Bus / Cab? →</button>
             </div>
           </div>
 
@@ -2299,6 +2302,94 @@ export default function App(){
                   </div>
                 </div>
 
+              </div>
+            </div>
+          </div>
+
+          {/* Steps */}
+          <div style={{background:C.white}}>
+            <div className="wrap">
+              <div className="sec-lbl" style={{color:C.orange}}>The Process</div>
+              <h2 className="sec-h2">How It Works — Step by Step</h2>
+              <div className="divider" style={{background:C.orange}}/>
+              <div className="steps">
+                {RIDER_STEPS.map(s=>(
+                  <div className="step" key={s.n}>
+                    <div className="step-n cd">{s.n}</div>
+                    <div className="step-t">{s.t}</div>
+                    <div className="step-b">{s.b}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Referral */}
+          <div style={{background:C.offwhite}}>
+            <div className="wrap">
+              <div className="sec-lbl" style={{color:C.orange}}>Referral Discount</div>
+              <h2 className="sec-h2">Refer Someone. Get a Discount on Your HP Balance.</h2>
+              <div className="divider" style={{background:C.orange}}/>
+              <div className="ref-box">
+                <p style={{color:"#AAA",fontSize:14,lineHeight:1.8,marginBottom:16}}>For every person you successfully refer to RideTrust, you receive a discount off your own outstanding HP balance. The more you refer, the less you owe.</p>
+                <div className="ref-grid">
+                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Bike rider</div><div className="ref-item-b">Get <strong>₦50,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🛺 Refer a Keke rider</div><div className="ref-item-b">Get <strong>₦150,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🚐 Refer a Minibus driver</div><div className="ref-item-b">Get <strong>₦200,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🚌 Refer a Full Bus / Cab driver</div><div className="ref-item-b">Get <strong>₦250,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🔄 No limit on referrals</div><div className="ref-item-b">Refer as many people as you want. Each successful referral reduces what you still owe — higher vehicle types earn you bigger discounts.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">✅ When it applies</div><div className="ref-item-b">Discount applies as soon as the person you referred pays their first deposit and becomes a committed subscriber. If they withdraw, the discount is reversed. Each person you refer automatically becomes one of your guarantors. And you likewise become their guarantor. Terms & Conditions apply.</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ContactSection accentColor={C.orange}/>
+
+          {/* CTA */}
+          <div className="cta-strip" style={{background:C.orange}}>
+            <h2 className="cta-h cd">Ready to Own Your Bike or Keke?</h2>
+            <p className="cta-s">No bank. No wahala. Brand new. Yours at the end.</p>
+            <div className="cta-btns">
+              <button className="btn btn-white" onClick={()=>openModal("rider-bike")}>🏍️ Apply for Bike</button>
+              <button className="btn btn-black" onClick={()=>openModal("rider-keke")}>🛺 Apply for Keke</button>
+              <button className="btn" style={{background:"#1A1A1A",color:"#AAA",border:"1.5px solid #555"}} onClick={()=>navigate("ride4w")}>Looking for Korope / Bus / Cab? →</button>
+            </div>
+          </div>
+          <Footer/>
+        </>
+      )}
+
+      {/* ══ RIDER PAGE — Mini Korope & Hiace/Cab (/ride4w) ══ */}
+      {page==="ride4w"&&(
+        <>
+          <nav>
+            <div className="logo cd">RIDE<span>TRUST</span> HP</div>
+            <div className="nav-tag">HIRE PURCHASE</div>
+          </nav>
+
+          {/* Hero */}
+          <div style={{background:C.black,padding:"72px 24px 60px",textAlign:"center"}}>
+            <div className="hero-eyebrow" style={{background:"#4338CA",color:C.white}}>RoyalTech Partnership & Investment Limited</div>
+            <h1 className="hero-h1 cd" style={{color:C.white}}>Korope & Bus — <span style={{color:"#818CF8"}}>Ride To Own</span></h1>
+            <div className="hero-sub" style={{color:"#CCC"}}>4-Wheel Hire Purchase</div>
+            <p style={{fontSize:15,color:"#AAA",maxWidth:520,margin:"0 auto 36px",lineHeight:1.8}}>Tokunbo Mini Korope or full-size Hiace bus / cab. Fixed deposit. Weekly payments. Full ownership at the end. No bank. No wahala.</p>
+            <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
+              <button className="btn" style={{background:"#4338CA",color:C.white}} onClick={()=>openModal("rider-mini")}>🚗 Apply for Mini Korope</button>
+              <button className="btn" style={{background:"#991B1B",color:C.white}} onClick={()=>openModal("rider-full")}>🚌 Apply for Hiace Bus / Cab</button>
+              <button className="btn" style={{background:"#333",color:"#AAA",border:"1.5px solid #555",fontSize:13}} onClick={()=>navigate("ride")}>Looking for Bike or Keke? →</button>
+            </div>
+          </div>
+
+          {/* Vehicles */}
+          <div style={{background:C.offwhite}}>
+            <div className="wrap">
+              <div className="sec-lbl" style={{color:"#4338CA"}}>Choose Your Vehicle</div>
+              <h2 className="sec-h2">Pick Your Hire Purchase Deal</h2>
+              <div className="divider" style={{background:"#4338CA"}}/>
+              <p className="sec-body">Insurance and plate registration included in every deal. Deposit spread over 3 months.</p>
+              <div className="v-grid">
+
                 {/* 4-Wheel Mini */}
                 <div className="v-card">
                   <div className="v-head" style={{background:"#1A1A4A"}}>
@@ -2362,6 +2453,7 @@ export default function App(){
                     <button className="btn btn-full" style={{background:"#B91C1C",color:C.white,marginTop:12}} onClick={()=>openModal("rider-full")}>Apply for Full Bus / Cab</button>
                   </div>
                 </div>
+
               </div>
             </div>
           </div>
@@ -2369,9 +2461,9 @@ export default function App(){
           {/* Steps */}
           <div style={{background:C.white}}>
             <div className="wrap">
-              <div className="sec-lbl" style={{color:C.orange}}>The Process</div>
+              <div className="sec-lbl" style={{color:"#4338CA"}}>The Process</div>
               <h2 className="sec-h2">How It Works — Step by Step</h2>
-              <div className="divider" style={{background:C.orange}}/>
+              <div className="divider" style={{background:"#4338CA"}}/>
               <div className="steps">
                 {RIDER_STEPS.map(s=>(
                   <div className="step" key={s.n}>
@@ -2387,9 +2479,9 @@ export default function App(){
           {/* Referral */}
           <div style={{background:C.offwhite}}>
             <div className="wrap">
-              <div className="sec-lbl" style={{color:C.orange}}>Referral Discount</div>
+              <div className="sec-lbl" style={{color:"#4338CA"}}>Referral Discount</div>
               <h2 className="sec-h2">Refer Someone. Get a Discount on Your HP Balance.</h2>
-              <div className="divider" style={{background:C.orange}}/>
+              <div className="divider" style={{background:"#4338CA"}}/>
               <div className="ref-box">
                 <p style={{color:"#AAA",fontSize:14,lineHeight:1.8,marginBottom:16}}>For every person you successfully refer to RideTrust, you receive a discount off your own outstanding HP balance. The more you refer, the less you owe.</p>
                 <div className="ref-grid">
@@ -2398,23 +2490,22 @@ export default function App(){
                   <div className="ref-item"><div className="ref-item-t">🚐 Refer a Minibus driver</div><div className="ref-item-b">Get <strong>₦200,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🚌 Refer a Full Bus / Cab driver</div><div className="ref-item-b">Get <strong>₦250,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🔄 No limit on referrals</div><div className="ref-item-b">Refer as many people as you want. Each successful referral reduces what you still owe — higher vehicle types earn you bigger discounts.</div></div>
-                  <div className="ref-item"><div className="ref-item-t">✅ When it applies</div><div className="ref-item-b">Discount applies as soon as the person you referred pays their first deposit and becomes a committed subscriber. If they withdraw, the discount is reversed. Each person you refer automatically becomes one of your guarantors. And you likewise become their guarantor. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">✅ When it applies</div><div className="ref-item-b">Discount applies as soon as the person you referred pays their first deposit and becomes a committed subscriber. If they withdraw, the discount is reversed. Terms & Conditions apply.</div></div>
                 </div>
               </div>
             </div>
           </div>
 
-          <ContactSection accentColor={C.orange}/>
+          <ContactSection accentColor={"#4338CA"}/>
 
           {/* CTA */}
-          <div className="cta-strip" style={{background:C.orange}}>
-            <h2 className="cta-h cd">Ready to Own Your Vehicle?</h2>
-            <p className="cta-s">No bank. No wahala. Brand new. Yours at the end.</p>
+          <div className="cta-strip" style={{background:"#4338CA"}}>
+            <h2 className="cta-h cd">Ready to Own Your Korope or Bus?</h2>
+            <p className="cta-s">No bank. No wahala. Tokunbo vehicle. Yours at the end.</p>
             <div className="cta-btns">
-              <button className="btn btn-white" onClick={()=>openModal("rider-bike")}>🏍️ Apply for Bike</button>
-              <button className="btn btn-black" onClick={()=>openModal("rider-keke")}>🛺 Apply for Keke</button>
-              <button className="btn" style={{background:"#4338CA",color:C.white}} onClick={()=>openModal("rider-mini")}>🚗 Apply for Mini Korope</button>
-              <button className="btn" style={{background:"#991B1B",color:C.white}} onClick={()=>openModal("rider-full")}>🚌 Apply for Hiace Bus / Cab</button>
+              <button className="btn btn-white" onClick={()=>openModal("rider-mini")}>🚗 Apply for Mini Korope</button>
+              <button className="btn btn-black" onClick={()=>openModal("rider-full")}>🚌 Apply for Hiace Bus / Cab</button>
+              <button className="btn" style={{background:"#1A1A1A",color:"#AAA",border:"1.5px solid #555"}} onClick={()=>navigate("ride")}>Looking for Bike or Keke? →</button>
             </div>
           </div>
           <Footer/>
