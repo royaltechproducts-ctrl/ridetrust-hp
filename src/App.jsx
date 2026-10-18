@@ -15,10 +15,15 @@ const genPassword = (prefix) => {
   return code;
 };
 
-const genReferralCode = (name) => {
-  const initials = name.trim().split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,3);
-  const rand = Math.floor(1000+Math.random()*9000);
-  return "RT-"+initials+rand;
+const genUserCode = async (role) => {
+  // role: "rider" → RT-RDR-XXXXX | "lma" → RT-LMA-XXXXX | "investor" → RT-INV-XXXXX
+  const prefixMap = { rider:"RT-RDR", lma:"RT-LMA", investor:"RT-INV" };
+  const tableMap  = { rider:"rt_riders", lma:"rt_agents", investor:"rt_investors" };
+  const prefix = prefixMap[role] || "RT-USR";
+  const table  = tableMap[role]  || "rt_riders";
+  const { count } = await sb.from(table).select("*",{count:"exact",head:true});
+  const seq = String((count||0) + 1).padStart(5,"0");
+  return `${prefix}-${seq}`;
 };
 
 const sendAdminEmail = async (subject, message) => {
@@ -252,6 +257,39 @@ const logVisit = async (refType, refId, destination) => {
   });
 };
 
+// ── LmaFleetList sub-component ───────────────────────────────
+function LmaFleetList({agentId, sb, C}){
+  const [fleet, setFleet] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(()=>{
+    if(!agentId) return;
+    sb.from("rt_riders").select("id,full_name,vehicle_type,rider_status,hp_discount_balance,referral_code")
+      .eq("captain_id", agentId)
+      .then(({data})=>{ setFleet(data||[]); setLoading(false); });
+  },[agentId]);
+  if(loading) return <div style={{color:C.grey,textAlign:"center",padding:24}}>Loading fleet...</div>;
+  if(fleet.length===0) return <div style={{color:C.grey,fontSize:13,textAlign:"center",padding:24}}>No riders assigned to you yet. RoyalTech links riders to your fleet when they approve applications on your route.</div>;
+  return (
+    <div>
+      {fleet.map((r,i)=>(
+        <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:i<fleet.length-1?"1px solid #EEE":"none"}}>
+          <div>
+            <div style={{fontWeight:700,fontSize:13,color:C.black}}>{r.full_name}</div>
+            <div style={{fontSize:11,color:C.grey,marginTop:2}}>
+              {{bike:"🏍️ Bike",keke:"🛺 Keke",mini:"🚗 Mini",full:"🚌 Bus/Cab"}[r.vehicle_type]||r.vehicle_type} · Code: {r.referral_code||"—"}
+            </div>
+          </div>
+          <span style={{padding:"3px 10px",borderRadius:20,fontSize:10,fontWeight:700,
+            background:r.rider_status==="active_rider"?"#BBF7D0":r.rider_status==="committed_applicant"?"#BFDBFE":"#FEF3C7",
+            color:r.rider_status==="active_rider"?"#166534":r.rider_status==="committed_applicant"?"#1E40AF":"#92400E"}}>
+            {r.rider_status==="active_rider"?"Active":r.rider_status==="committed_applicant"?"Committed":"Pending"}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Main App ─────────────────────────────────────────────────
 export default function App(){
   // Detect page from URL path — also handles referral ?to= param
@@ -274,7 +312,11 @@ export default function App(){
   const [appStage,  setAppStage]  = useState(1);
   const [stage1RiderId, setStage1RiderId] = useState(null);
   const [toast,     setToast]     = useState(null);
-  const [loginForm, setLoginForm] = useState({email:"",password:""});
+  const [loginForm, setLoginForm] = useState({credential:""});
+  const [lmaPortal,      setLmaPortal]      = useState(null); // logged-in LMA object
+  const [lmaPortalTab,   setLmaPortalTab]   = useState("overview");
+  const [investorPortal, setInvestorPortal] = useState(null); // logged-in investor object(s)
+  const [investorPortalTab, setInvestorPortalTab] = useState("overview");
   const [adminOn,   setAdminOn]   = useState(false);
   const [adminTab,  setAdminTab]  = useState("riders");
   const [riders,    setRiders]    = useState([]);
@@ -316,24 +358,45 @@ export default function App(){
     if(tp.data) setTpGuarantors(tp.data);
   };
 
-  const handleRiderLogin = async () => {
-    const emailVal = loginForm.email.trim().toLowerCase();
-    const passVal  = loginForm.password.trim();
-    if(!emailVal){ showToast("Please enter your email."); return; }
-    // Try email match first, then password match
-    let query = sb.from("rt_riders").select("*");
-    if(emailVal) query = query.ilike("email", emailVal);
-    const { data } = await query;
-    if(!data||data.length===0){ showToast("No account found with that email."); return; }
-    const rider = data[0];
-    // If password provided, verify it
-    if(passVal && rider.password !== passVal){ showToast("Incorrect password."); return; }
-    loadRiderPortal(rider);
+  const loadLmaPortal = async (agent) => {
+    setLmaPortal(agent);
+    setLmaPortalTab("overview");
   };
 
-  const handleAdminLogin = () => {
-    if(loginForm.password === ADMIN_PASS){ setAdminOn(true); }
-    else { showToast("Incorrect password."); }
+  const loadInvestorPortal = async (rows) => {
+    setInvestorPortal(rows);
+    setInvestorPortalTab("overview");
+  };
+
+  const handlePortalLogin = async () => {
+    const raw = (loginForm.credential||"").trim();
+    if(!raw){ showToast("Please enter your email or user code."); return; }
+
+    // Admin password check
+    if(raw === ADMIN_PASS){ setAdminOn(true); return; }
+
+    const isCode = raw.toUpperCase().startsWith("RT-");
+    const val = raw.toLowerCase();
+
+    // Search riders
+    let rQuery = sb.from("rt_riders").select("*");
+    rQuery = isCode ? rQuery.ilike("referral_code", val) : rQuery.ilike("email", val);
+    const { data: rData } = await rQuery;
+    if(rData && rData.length > 0){ loadRiderPortal(rData[0]); return; }
+
+    // Search LMAs / agents
+    let aQuery = sb.from("rt_agents").select("*");
+    aQuery = isCode ? aQuery.ilike("referral_code", val) : aQuery.ilike("email", val);
+    const { data: aData } = await aQuery;
+    if(aData && aData.length > 0){ loadLmaPortal(aData[0]); return; }
+
+    // Search investors (multiple rows per email allowed)
+    let iQuery = sb.from("rt_investors").select("*");
+    iQuery = isCode ? iQuery.ilike("referral_code", val) : iQuery.ilike("email", val);
+    const { data: iData } = await iQuery;
+    if(iData && iData.length > 0){ loadInvestorPortal(iData); return; }
+
+    showToast("No account found. Check your email or user code and try again.");
   };
 
   const loadData = async () => {
@@ -532,7 +595,7 @@ export default function App(){
         setStage1RiderId(newAgent?.id||null);
       } else {
         const pwd  = genPassword("R");
-        const rcode = genReferralCode(form.name);
+        const rcode = await genUserCode("rider");
         const vtMap = {"rider-bike":"bike","rider-keke":"keke","rider-mini":"mini","rider-full":"full"};
         const { data: newRider } = await sb.from("rt_riders").insert({
           vehicle_type: vtMap[type]||"keke",
@@ -625,7 +688,7 @@ export default function App(){
     try {
       if(type==="rider-bike"||type==="rider-keke"||type==="rider-mini"||type==="rider-full"){
         const pwd  = genPassword("R");
-        const rcode = genReferralCode(form.name);
+        const rcode = await genUserCode("rider");
         const vtMap = {"rider-bike":"bike","rider-keke":"keke","rider-mini":"mini","rider-full":"full"};
         const { data: newRider } = await sb.from("rt_riders").insert({
           vehicle_type: vtMap[type]||"keke",
@@ -689,9 +752,11 @@ export default function App(){
           `A new rider application has been submitted.\n\n${waMsg}\n\n---\nWHATSAPP TO: ${form.phone}\nMessage: Dear ${form.name}, your RideTrust HP application has been received. Your portal access:\nEmail: ${form.email}\nPassword: ${pwd}\n\nLog in at: tbvap.vercel.app\nYour referral code: ${rcode}\n\nRideTrust HP | RoyalTech`
         );
       } else if(type==="lma"){
+        const lmaCode = await genUserCode("lma");
         await sb.from("rt_agents").insert({
           full_name: form.name, phone: form.phone, email: form.email,
           address: form.address||null,
+          referral_code: lmaCode,
           utility_bill: form.utilityBill||null,
           parking_photo: form.parkingPhoto||null,
           photo_id: form.photoId||null,
@@ -707,10 +772,12 @@ export default function App(){
         }
       } else if(type==="invest-bike"||type==="invest-keke"||type==="invest-mini"||type==="invest-full"){
         const pkgMap = {"invest-bike":"bike","invest-keke":"keke","invest-mini":"mini","invest-full":"full"};
+        const invCode = await genUserCode("investor");
         await sb.from("rt_investors").insert({
           package_type: pkgMap[type]||"keke",
           full_name: form.name, phone: form.phone, email: form.email,
           units: form.units?Number(form.units.split(" ")[0]):1,
+          referral_code: invCode,
           photo_id: form.photoId||null,
           notes: form.notes||null,
           ref_type: refType||null,
@@ -729,12 +796,7 @@ export default function App(){
     }
   };
 
-  const handleLogin = async () => {
-    const passVal = loginForm.password.trim();
-    if(passVal === ADMIN_PASS){ setAdminOn(true); return; }
-    // Try rider login
-    await handleRiderLogin();
-  };
+  const handleLogin = async () => { await handlePortalLogin(); };
 
   return(
     <>
@@ -753,12 +815,17 @@ export default function App(){
             <div className="access-title cd">Welcome to RideTrust</div>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:18,textTransform:"uppercase",textAlign:"center",color:C.orange,letterSpacing:"0.06em",marginBottom:12}}>Sales & Services</div>
             <div className="access-sub" style={{marginBottom:4}}>Experience Your Best Hire Purchase Ever — with amazing discounts on the go!</div>
-            <div className="access-sub">Enter your credentials to access your portal.</div>
-            <div className="field"><label>Email Address</label><input type="email" placeholder="your@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))}/></div>
-            <div className="field"><label>Password</label><input type="password" placeholder="Your password" value={loginForm.password} onChange={e=>setLoginForm(f=>({...f,password:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/></div>
-            <button className="btn btn-orange btn-full" style={{marginTop:4}} onClick={handleLogin}>Access My Portal</button>
+            <div className="access-sub">Enter your registered email <strong>or</strong> user code (e.g. RT-RDR-00001) to access your portal.</div>
+            <div className="field" style={{marginTop:16}}>
+              <label>Email Address or User Code</label>
+              <input type="text" placeholder="your@email.com  or  RT-RDR-00001" value={loginForm.credential}
+                onChange={e=>setLoginForm(f=>({...f,credential:e.target.value}))}
+                onKeyDown={e=>e.key==="Enter"&&handleLogin()}
+                autoComplete="off" autoCapitalize="none" style={{letterSpacing:"0.01em"}}/>
+            </div>
+            <button className="btn btn-orange btn-full" style={{marginTop:4}} onClick={handleLogin}>Access My Portal →</button>
             <div style={{textAlign:"center",marginTop:12}}>
-              <button onClick={()=>showToast("Password reset — contact RoyalTech on WhatsApp: +234 909 999 4816")} style={{background:"none",border:"none",color:C.grey,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot your password?</button>
+              <button onClick={()=>showToast("Need help? Contact RoyalTech on WhatsApp: +234 909 999 4816")} style={{background:"none",border:"none",color:C.grey,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Can't log in? Contact support</button>
             </div>
 
             <div className="divider-text">Not Registered Yet?</div>
@@ -793,7 +860,7 @@ export default function App(){
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:C.white}}>
               RIDE<span style={{color:C.orange}}>TRUST</span> <span style={{color:"#888",fontSize:12,fontWeight:400}}>MY PORTAL</span>
             </div>
-            <button onClick={()=>{setRiderPortal(null);setLoginForm({email:"",password:""})}} style={{background:"#222",color:"#AAA",border:"none",padding:"6px 14px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Exit Portal</button>
+            <button onClick={()=>{setRiderPortal(null);setLoginForm({credential:""})}} style={{background:"#222",color:"#AAA",border:"none",padding:"6px 14px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Exit Portal</button>
           </div>
 
           {/* Tabs */}
@@ -1150,6 +1217,385 @@ export default function App(){
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ══ LMA PORTAL ════════════════════════════════════════ */}
+      {page==="access"&&lmaPortal&&!adminOn&&(
+        <div style={{position:"fixed",inset:0,background:C.offwhite,zIndex:500,overflowY:"auto"}}>
+          {/* Nav */}
+          <div style={{background:C.black,padding:"0 20px",display:"flex",justifyContent:"space-between",alignItems:"center",height:56,position:"sticky",top:0,zIndex:10}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:C.white}}>
+              RIDE<span style={{color:C.orange}}>TRUST</span> <span style={{color:"#888",fontSize:12,fontWeight:400}}>FLEET MANAGER</span>
+            </div>
+            <button onClick={()=>{setLmaPortal(null);setLoginForm({credential:""})}} style={{background:"#222",color:"#AAA",border:"none",padding:"6px 14px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Exit Portal</button>
+          </div>
+
+          {/* Tabs */}
+          <div style={{background:C.white,borderBottom:"2px solid "+C.lightgr,padding:"0 20px",display:"flex",gap:4,overflowX:"auto"}}>
+            {[
+              {k:"overview",  label:"📋 Overview"},
+              {k:"fleet",     label:"🏍️ My Fleet"},
+              {k:"earnings",  label:"💰 Earnings"},
+              {k:"referrals", label:"🎯 Referral Bonuses"},
+            ].map(t=>(
+              <button key={t.k} onClick={()=>setLmaPortalTab(t.k)}
+                style={{padding:"14px 14px",background:"none",border:"none",
+                borderBottom:lmaPortalTab===t.k?"3px solid "+C.orange:"3px solid transparent",
+                fontWeight:lmaPortalTab===t.k?700:400,color:lmaPortalTab===t.k?C.black:C.grey,
+                fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{maxWidth:700,margin:"0 auto",padding:"24px 20px"}}>
+
+            {/* Overview */}
+            {lmaPortalTab==="overview"&&(
+              <div>
+                {/* Welcome card */}
+                <div style={{background:C.black,borderRadius:12,padding:24,color:C.white,marginBottom:16,backgroundImage:"linear-gradient(135deg,#0D1B2A 0%,#1A1040 100%)"}}>
+                  <div style={{fontSize:11,color:"#7C3AED",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Fleet Manager Portal</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,marginBottom:4}}>Welcome, {lmaPortal.full_name.split(" ")[0]} 👋</div>
+                  <div style={{fontSize:12,color:"#AAA",marginBottom:16}}>User Code: <strong style={{color:C.orange}}>{lmaPortal.referral_code||"—"}</strong></div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+                    <div style={{background:"rgba(255,255,255,.07)",borderRadius:8,padding:12,textAlign:"center"}}>
+                      <div style={{fontSize:24,fontWeight:900,color:C.orange}}>{lmaPortal.fleet_count||0}</div>
+                      <div style={{fontSize:10,color:"#AAA",marginTop:2}}>Riders in Fleet</div>
+                    </div>
+                    <div style={{background:"rgba(255,255,255,.07)",borderRadius:8,padding:12,textAlign:"center"}}>
+                      <div style={{fontSize:20,fontWeight:900,color:"#FBBF24"}}>{lmaPortal.tier==="commander"?"10%":"5%"}</div>
+                      <div style={{fontSize:10,color:"#AAA",marginTop:2}}>Commission Rate</div>
+                    </div>
+                    <div style={{background:"rgba(255,255,255,.07)",borderRadius:8,padding:12,textAlign:"center"}}>
+                      <div style={{fontSize:18,fontWeight:900,color:"#34D399"}}>₦{((lmaPortal.accrued_commission||0)).toLocaleString()}</div>
+                      <div style={{fontSize:10,color:"#AAA",marginTop:2}}>Total Earned</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tier status */}
+                <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:16}}>
+                  <div style={{fontWeight:800,fontSize:14,marginBottom:12}}>🎖️ Your Tier Status</div>
+                  <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+                    <div style={{flex:1,background:lmaPortal.tier==="commander"?"#1A1040":"#FFF7ED",border:"2px solid "+(lmaPortal.tier==="commander"?"#7C3AED":"#F97316"),borderRadius:8,padding:14,textAlign:"center"}}>
+                      <div style={{fontSize:20}}>{lmaPortal.tier==="commander"?"🎖️":"⭐"}</div>
+                      <div style={{fontWeight:900,fontSize:14,color:lmaPortal.tier==="commander"?"#A78BFA":C.orange,marginTop:4}}>{lmaPortal.tier==="commander"?"Route Commander":"Route Captain"}</div>
+                      <div style={{fontSize:11,color:C.grey,marginTop:2}}>{lmaPortal.tier==="commander"?"10% monthly commission":"5% monthly commission"}</div>
+                    </div>
+                  </div>
+                  {lmaPortal.tier!=="commander"&&(
+                    <div style={{background:"#EFF6FF",borderRadius:8,padding:14,fontSize:13,color:C.blue,lineHeight:1.8}}>
+                      <strong>Upgrade to Route Commander (10%):</strong> Manage 10+ active riders to auto-graduate. You currently have <strong>{lmaPortal.fleet_count||0}</strong> riders. Need <strong>{Math.max(0,10-(lmaPortal.fleet_count||0))}</strong> more.
+                    </div>
+                  )}
+                </div>
+
+                {/* Application status */}
+                <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:16}}>
+                  <div style={{fontWeight:800,fontSize:14,marginBottom:10}}>📋 Your Application</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,fontSize:13}}>
+                    <div style={{background:C.offwhite,borderRadius:8,padding:12,textAlign:"center"}}>
+                      <div style={{fontSize:10,color:C.grey,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Application Status</div>
+                      <div style={{fontWeight:900,fontSize:12,color:lmaPortal.captain_status==="active"?C.green:C.orange,textTransform:"uppercase"}}>{lmaPortal.captain_status||lmaPortal.app_status||"Under Review"}</div>
+                    </div>
+                    <div style={{background:C.offwhite,borderRadius:8,padding:12,textAlign:"center"}}>
+                      <div style={{fontSize:10,color:C.grey,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Declared Route</div>
+                      <div style={{fontWeight:700,fontSize:12,color:C.black}}>{lmaPortal.declared_route||lmaPortal.address||"—"}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact */}
+                <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:10,padding:16,fontSize:13,color:"#166534",lineHeight:1.9}}>
+                  <strong>📞 RoyalTech Support:</strong> WhatsApp <strong>{ADMIN_PHONE}</strong> · Email <strong>{ADMIN_EMAIL}</strong>
+                </div>
+              </div>
+            )}
+
+            {/* Fleet tab */}
+            {lmaPortalTab==="fleet"&&(
+              <div>
+                <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr}}>
+                  <div style={{fontWeight:800,fontSize:15,marginBottom:4}}>🏍️ My Fleet</div>
+                  <div style={{fontSize:12,color:C.grey,marginBottom:16}}>Riders assigned to you by RoyalTech.</div>
+                  <LmaFleetList agentId={lmaPortal.id} sb={sb} C={C}/>
+                </div>
+              </div>
+            )}
+
+            {/* Earnings tab */}
+            {lmaPortalTab==="earnings"&&(
+              <div>
+                <div style={{background:C.black,borderRadius:12,padding:24,color:C.white,marginBottom:16}}>
+                  <div style={{fontSize:11,color:"#AAA",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Total Commission Earned</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:36,color:C.orange}}>₦{(lmaPortal.accrued_commission||0).toLocaleString()}</div>
+                  <div style={{fontSize:12,color:"#AAA",marginTop:4}}>at {lmaPortal.tier==="commander"?"10%":"5%"} of weekly gross remittances from your fleet</div>
+                </div>
+                <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:16}}>
+                  <div style={{fontWeight:800,fontSize:14,marginBottom:10}}>How Your Commission Works</div>
+                  <div style={{fontSize:13,color:C.grey,lineHeight:1.9}}>
+                    Every week each active rider in your fleet pays their weekly remittance. You earn <strong>{lmaPortal.tier==="commander"?"10%":"5%"}</strong> of the <em>gross</em> remittance as monthly commission — paid out by RoyalTech at month-end.<br/><br/>
+                    <strong>Example (Bike rider, ₦40,000/week):</strong> Your cut = ₦{lmaPortal.tier==="commander"?4000:2000}/week per rider.<br/>
+                    <strong>Example (Keke rider, ₦90,000/week):</strong> Your cut = ₦{lmaPortal.tier==="commander"?9000:4500}/week per rider.
+                  </div>
+                </div>
+                <div style={{background:"#FFF7ED",border:"1.5px solid #FCD34D",borderRadius:10,padding:16,fontSize:12,color:"#92400E",lineHeight:1.8}}>
+                  Commission payments are processed monthly. For questions contact RoyalTech: <strong>{ADMIN_PHONE}</strong>
+                </div>
+              </div>
+            )}
+
+            {/* Referral bonuses tab */}
+            {lmaPortalTab==="referrals"&&(
+              <div>
+                <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:16}}>
+                  <div style={{fontWeight:800,fontSize:15,marginBottom:4}}>🎯 Referral Bonuses</div>
+                  <div style={{fontSize:12,color:C.grey,marginBottom:16}}>One-time bonuses when you refer a rider who takes delivery and makes their first remittance.</div>
+                  <div style={{background:"#142030",borderRadius:10,padding:16,marginBottom:16}}>
+                    {[
+                      {icon:"🏍️",label:"Bike / Dispatch Rider",amount:"₦50K – ₦100K"},
+                      {icon:"🛺",label:"Keke Tricycle Rider",amount:"₦150,000"},
+                      {icon:"🚗",label:"Mini Korope Driver",amount:"₦200,000"},
+                      {icon:"🚌",label:"Full Bus / Cab Driver",amount:"₦250,000"},
+                    ].map((row,i)=>(
+                      <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<3?"1px solid rgba(255,255,255,.08)":"none",fontSize:13}}>
+                        <span style={{color:"#CBD5E1"}}>{row.icon} {row.label}</span>
+                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,color:C.orange}}>{row.amount}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{fontSize:12,color:C.grey,lineHeight:1.7}}>
+                    ✅ Bonus paid after the referred rider takes delivery of their vehicle AND makes their first weekly remittance. They also auto-join your fleet.
+                  </div>
+                </div>
+                <div style={{background:C.black,borderRadius:10,padding:20,color:C.white}}>
+                  <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>🔗 Your Referral Link</div>
+                  <div style={{background:"#1A1A1A",borderRadius:6,padding:"10px 14px",fontSize:12,color:C.orange,fontFamily:"monospace",marginBottom:10,wordBreak:"break-all"}}>
+                    ridetrust.com.ng/#/ride?ref={lmaPortal.referral_code||lmaPortal.id}
+                  </div>
+                  <button onClick={()=>{navigator.clipboard.writeText("ridetrust.com.ng/#/ride?ref="+(lmaPortal.referral_code||lmaPortal.id));showToast("Link copied!");}}
+                    style={{background:C.orange,color:C.white,border:"none",padding:"10px 20px",borderRadius:6,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                    Copy Referral Link
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══ INVESTOR PORTAL ════════════════════════════════════ */}
+      {page==="access"&&investorPortal&&!adminOn&&(
+        <div style={{position:"fixed",inset:0,background:C.offwhite,zIndex:500,overflowY:"auto"}}>
+          {/* Nav */}
+          <div style={{background:C.black,padding:"0 20px",display:"flex",justifyContent:"space-between",alignItems:"center",height:56,position:"sticky",top:0,zIndex:10}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:C.white}}>
+              RIDE<span style={{color:C.orange}}>TRUST</span> <span style={{color:"#888",fontSize:12,fontWeight:400}}>INVESTOR PORTAL</span>
+            </div>
+            <button onClick={()=>{setInvestorPortal(null);setLoginForm({credential:""})}} style={{background:"#222",color:"#AAA",border:"none",padding:"6px 14px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Exit Portal</button>
+          </div>
+
+          {/* Tabs */}
+          <div style={{background:C.white,borderBottom:"2px solid "+C.lightgr,padding:"0 20px",display:"flex",gap:4,overflowX:"auto"}}>
+            {[
+              {k:"overview",  label:"📊 Portfolio Overview"},
+              {k:"packages",  label:"📦 My Packages"},
+              {k:"returns",   label:"💵 Returns & Payouts"},
+              {k:"contact",   label:"📞 Support"},
+            ].map(t=>(
+              <button key={t.k} onClick={()=>setInvestorPortalTab(t.k)}
+                style={{padding:"14px 14px",background:"none",border:"none",
+                borderBottom:investorPortalTab===t.k?"3px solid "+C.orange:"3px solid transparent",
+                fontWeight:investorPortalTab===t.k?700:400,color:investorPortalTab===t.k?C.black:C.grey,
+                fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{maxWidth:760,margin:"0 auto",padding:"24px 20px"}}>
+            {(()=>{
+              const inv = investorPortal[0]||{};
+              const totalUnits = investorPortal.reduce((s,r)=>s+(r.units||1),0);
+              // Weekly returns by package type
+              const wklyRet = {bike:32000,keke:65000,mini:65000,full:90000};
+              const totalWeekly = investorPortal.reduce((s,r)=>s+(wklyRet[r.package_type]||0)*(r.units||1),0);
+              const totalAccrued = investorPortal.reduce((s,r)=>s+(r.accrued_return||0),0);
+
+              return (<>
+
+              {/* Overview tab */}
+              {investorPortalTab==="overview"&&(
+                <div>
+                  {/* Hero summary */}
+                  <div style={{background:"linear-gradient(135deg,#0D1B2A 0%,#14203A 100%)",borderRadius:16,padding:28,color:C.white,marginBottom:16,border:"1px solid rgba(251,191,36,.2)"}}>
+                    <div style={{fontSize:11,color:"#FBBF24",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Investment Portfolio</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:24,marginBottom:4}}>Hello, {inv.full_name?.split(" ")[0]||"Investor"} 👋</div>
+                    <div style={{fontSize:12,color:"#888",marginBottom:20}}>Investor since {new Date(inv.created_at).toLocaleDateString("en-NG",{month:"long",year:"numeric"})}</div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+                      <div style={{background:"rgba(255,255,255,.06)",borderRadius:10,padding:16,textAlign:"center"}}>
+                        <div style={{fontSize:10,color:"#AAA",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Packages</div>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:30,color:C.orange}}>{investorPortal.length}</div>
+                      </div>
+                      <div style={{background:"rgba(255,255,255,.06)",borderRadius:10,padding:16,textAlign:"center"}}>
+                        <div style={{fontSize:10,color:"#AAA",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Units</div>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:30,color:"#FBBF24"}}>{totalUnits}</div>
+                      </div>
+                      <div style={{background:"rgba(255,255,255,.06)",borderRadius:10,padding:16,textAlign:"center"}}>
+                        <div style={{fontSize:10,color:"#AAA",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Weekly Return</div>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#34D399"}}>₦{totalWeekly.toLocaleString()}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Accrued & projected */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+                    <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,textAlign:"center"}}>
+                      <div style={{fontSize:11,color:C.grey,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Accrued</div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:26,color:C.orange}}>₦{totalAccrued.toLocaleString()}</div>
+                      <div style={{fontSize:11,color:C.grey,marginTop:4}}>across all packages</div>
+                    </div>
+                    <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,textAlign:"center"}}>
+                      <div style={{fontSize:11,color:C.grey,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Projected Annual</div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:26,color:"#FBBF24"}}>₦{(totalWeekly*52).toLocaleString()}</div>
+                      <div style={{fontSize:11,color:C.grey,marginTop:4}}>at current rate</div>
+                    </div>
+                  </div>
+
+                  {/* Package breakdown */}
+                  <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr}}>
+                    <div style={{fontWeight:800,fontSize:14,marginBottom:12}}>Package Breakdown</div>
+                    {investorPortal.map((pkg,i)=>(
+                      <div key={i} style={{padding:"12px 0",borderBottom:i<investorPortal.length-1?"1px solid "+C.lightgr:"none"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                          <div>
+                            <div style={{fontWeight:700,fontSize:13,color:C.black}}>{{bike:"🏍️ Dispatch Bike",keke:"🛺 Keke Tricycle",mini:"🚗 Mini Korope",full:"🚌 Full Bus/Cab"}[pkg.package_type]||pkg.package_type} × {pkg.units||1}</div>
+                            <div style={{fontSize:11,color:C.grey,marginTop:2}}>Code: {pkg.referral_code||"—"} · Status: <span style={{color:pkg.status==="active"?C.green:C.orange,fontWeight:600,textTransform:"uppercase"}}>{pkg.status||"pending"}</span></div>
+                          </div>
+                          <div style={{textAlign:"right"}}>
+                            <div style={{fontWeight:900,color:C.orange,fontSize:14}}>₦{((wklyRet[pkg.package_type]||0)*(pkg.units||1)).toLocaleString()}/wk</div>
+                            <div style={{fontSize:11,color:C.grey}}>per unit: ₦{(wklyRet[pkg.package_type]||0).toLocaleString()}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Packages tab */}
+              {investorPortalTab==="packages"&&(
+                <div>
+                  {investorPortal.map((pkg,i)=>{
+                    const pkgLabels = {bike:"Dispatch Bike",keke:"Keke Tricycle",mini:"Mini Korope (4-Wheel)",full:"Full Bus / Cab (4-Wheel)"};
+                    const pkgValues = {bike:"₦2,000,000 – ₦4,690,000",keke:"₦7,620,000",mini:"₦12,500,000",full:"₦19,240,000"};
+                    const weeklyRet = wklyRet[pkg.package_type]||0;
+                    const annualRet = weeklyRet * 52;
+                    return (
+                      <div key={i} style={{background:C.white,borderRadius:12,padding:22,border:"1.5px solid "+C.lightgr,marginBottom:14}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14,flexWrap:"wrap",gap:8}}>
+                          <div>
+                            <div style={{fontWeight:900,fontSize:16,color:C.black}}>{pkgLabels[pkg.package_type]||pkg.package_type}</div>
+                            <div style={{fontSize:12,color:C.grey,marginTop:2}}>User Code: <strong>{pkg.referral_code||"—"}</strong></div>
+                          </div>
+                          <span style={{padding:"4px 12px",borderRadius:20,fontSize:11,fontWeight:700,
+                            background:pkg.status==="active"?"#BBF7D0":"#FEF3C7",
+                            color:pkg.status==="active"?"#166534":"#92400E"}}>
+                            {pkg.status==="active"?"✅ Active":"⏳ "+(pkg.status||"Pending")}
+                          </span>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,fontSize:13}}>
+                          <div style={{background:C.offwhite,borderRadius:8,padding:12}}><div style={{fontSize:10,color:C.grey,marginBottom:3}}>Units Invested</div><strong>{pkg.units||1}</strong></div>
+                          <div style={{background:C.offwhite,borderRadius:8,padding:12}}><div style={{fontSize:10,color:C.grey,marginBottom:3}}>Vehicle Value</div><strong>{pkgValues[pkg.package_type]||"—"}</strong></div>
+                          <div style={{background:C.offwhite,borderRadius:8,padding:12}}><div style={{fontSize:10,color:C.grey,marginBottom:3}}>Weekly Return / Unit</div><strong style={{color:C.orange}}>₦{weeklyRet.toLocaleString()}</strong></div>
+                          <div style={{background:C.offwhite,borderRadius:8,padding:12}}><div style={{fontSize:10,color:C.grey,marginBottom:3}}>Annual Return (projected)</div><strong style={{color:C.orange}}>₦{annualRet.toLocaleString()}</strong></div>
+                          <div style={{background:C.offwhite,borderRadius:8,padding:12}}><div style={{fontSize:10,color:C.grey,marginBottom:3}}>Accrued Returns</div><strong style={{color:"#34D399"}}>₦{(pkg.accrued_return||0).toLocaleString()}</strong></div>
+                          <div style={{background:C.offwhite,borderRadius:8,padding:12}}><div style={{fontSize:10,color:C.grey,marginBottom:3}}>Applied</div><strong>{new Date(pkg.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})}</strong></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:10,padding:16,fontSize:13,color:C.blue,lineHeight:1.8}}>
+                    To add more investment packages, contact RoyalTech: <strong>{ADMIN_PHONE}</strong> or visit <strong>ridetrust.com.ng</strong>
+                  </div>
+                </div>
+              )}
+
+              {/* Returns tab */}
+              {investorPortalTab==="returns"&&(
+                <div>
+                  <div style={{background:C.black,borderRadius:12,padding:24,color:C.white,marginBottom:16}}>
+                    <div style={{fontSize:11,color:"#FBBF24",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Return Summary</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontSize:10,color:"#888",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Weekly Total Return</div>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:C.orange}}>₦{totalWeekly.toLocaleString()}</div>
+                      </div>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontSize:10,color:"#888",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Monthly Total Return</div>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#FBBF24"}}>₦{(totalWeekly*4).toLocaleString()}</div>
+                      </div>
+                    </div>
+                    <div style={{background:"rgba(255,255,255,.06)",borderRadius:8,padding:14,fontSize:13,lineHeight:1.9}}>
+                      <strong style={{color:"#FBBF24"}}>How returns work:</strong><br/>
+                      Investor returns are the <em>first priority</em> in RideTrust's fund split. Every week each active rider makes a remittance — your fixed weekly return is deducted first before anything else.<br/>
+                      Returns are paid to you weekly or held in your RoyalTech account for collection. For payment arrangements contact <strong>{ADMIN_PHONE}</strong>.
+                    </div>
+                  </div>
+                  <div style={{background:C.white,borderRadius:10,padding:20,border:"1.5px solid "+C.lightgr,marginBottom:16}}>
+                    <div style={{fontWeight:800,fontSize:14,marginBottom:10}}>Per-Package Weekly Returns</div>
+                    {investorPortal.map((pkg,i)=>(
+                      <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:i<investorPortal.length-1?"1px solid "+C.lightgr:"none",fontSize:13}}>
+                        <div>
+                          <div style={{fontWeight:700,color:C.black}}>{{bike:"🏍️ Bike",keke:"🛺 Keke",mini:"🚗 Mini",full:"🚌 Bus/Cab"}[pkg.package_type]||pkg.package_type} × {pkg.units||1}</div>
+                          <div style={{fontSize:11,color:C.grey,marginTop:2}}>Status: {pkg.status||"pending"}</div>
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          <div style={{fontWeight:900,color:C.orange}}>₦{((wklyRet[pkg.package_type]||0)*(pkg.units||1)).toLocaleString()}/wk</div>
+                          <div style={{fontSize:11,color:C.grey}}>₦{((wklyRet[pkg.package_type]||0)*(pkg.units||1)*52).toLocaleString()}/yr</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{background:"#F0FFF4",border:"1.5px solid #BBF7D0",borderRadius:10,padding:16,fontSize:13,color:"#166534",lineHeight:1.8}}>
+                    <strong>Bank Account for Return Payouts:</strong><br/>
+                    Provide your bank details to RoyalTech for direct weekly transfers. Contact <strong>{ADMIN_PHONE}</strong> to set this up.
+                  </div>
+                </div>
+              )}
+
+              {/* Contact tab */}
+              {investorPortalTab==="contact"&&(
+                <div>
+                  <div style={{background:C.white,borderRadius:10,padding:24,border:"1.5px solid "+C.lightgr,marginBottom:16}}>
+                    <div style={{fontWeight:800,fontSize:15,marginBottom:16}}>📞 RoyalTech Support</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,fontSize:13}}>
+                      {[
+                        {icon:"💬",label:"WhatsApp",val:ADMIN_PHONE,action:()=>window.open("https://wa.me/"+ADMIN_PHONE.replace(/\D/g,""))},
+                        {icon:"📧",label:"Email",val:ADMIN_EMAIL,action:()=>window.open("mailto:"+ADMIN_EMAIL)},
+                        {icon:"🌐",label:"Website",val:"ridetrust.com.ng",action:()=>window.open("https://ridetrust.com.ng")},
+                        {icon:"🕐",label:"Hours",val:"Mon–Sat 8am–6pm",action:null},
+                      ].map((c,i)=>(
+                        <div key={i} onClick={c.action||undefined} style={{background:C.offwhite,borderRadius:10,padding:16,cursor:c.action?"pointer":"default",textAlign:"center",border:"1.5px solid "+C.lightgr}}>
+                          <div style={{fontSize:28,marginBottom:6}}>{c.icon}</div>
+                          <div style={{fontSize:10,color:C.grey,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{c.label}</div>
+                          <div style={{fontWeight:700,fontSize:12,color:C.black}}>{c.val}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{background:"#FFF7ED",border:"1.5px solid #FCD34D",borderRadius:10,padding:16,fontSize:13,color:"#92400E",lineHeight:1.8}}>
+                    For all investment enquiries, return payout arrangements, or to add new packages — contact RoyalTech directly on WhatsApp at <strong>{ADMIN_PHONE}</strong>.<br/>
+                    Our team is available Monday to Saturday, 8am – 6pm.
+                  </div>
+                </div>
+              )}
+
+              </>);
+            })()}
           </div>
         </div>
       )}
