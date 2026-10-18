@@ -765,16 +765,16 @@ export default function App(){
             <div style={{fontSize:12,color:C.grey,marginBottom:12,textAlign:"center"}}>Click on your interest for more information and to sign up</div>
             <div className="interest-btns">
               <button className="int-btn" onClick={()=>navigate("ride")}>
-                <span className="int-icon">🏍️</span>
-                <div><div className="int-label">Bikes & Keke — Hire Purchase</div><div className="int-sub">Brand new dispatch bike or keke — own it fully</div></div>
+                <span className="int-icon">🛺</span>
+                <div><div className="int-label">Sign Up to Ride on Hire Purchase</div><div className="int-sub">Brand new bike or keke — own it fully</div></div>
               </button>
               <button className="int-btn" onClick={()=>navigate("ride4w")}>
                 <span className="int-icon">🚌</span>
-                <div><div className="int-label">Mini Korope & Hiace / Cab — Hire Purchase</div><div className="int-sub">4-wheel vehicles — mini korope, full bus or cab</div></div>
+                <div><div className="int-label">Sign Up to Drive on Hire Purchase</div><div className="int-sub">Clean Tokunbo Minibus or Full Hiace / Cab</div></div>
               </button>
               <button className="int-btn" onClick={()=>navigate("agent")}>
                 <span className="int-icon">🏢</span>
-                <div><div className="int-label">Sign Up to Become a Local Managing Agent</div><div className="int-sub">Manage riders on your route. Earn monthly commission.</div></div>
+                <div><div className="int-label">Sign Up to Become a Local Managing Agent</div><div className="int-sub">Manage riders. Earn weekly commissions.</div></div>
               </button>
               <button className="int-btn" onClick={()=>navigate("invest")}>
                 <span className="int-icon">💰</span>
