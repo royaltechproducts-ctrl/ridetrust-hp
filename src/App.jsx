@@ -847,15 +847,15 @@ export default function App(){
                     {riderPortal.vehicle_type==="bike"?"🏍️ Dispatch Bike":"🛺 Keke Tricycle"} — Your HP Deal
                   </div>
                   {riderPortal.vehicle_type==="bike"?(<>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP Package Value</span><strong>₦2,000,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP Package Value</span><strong>₦2,000,000 – ₦4,690,000</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Insurance & Plate License Reg</span><strong>Inclusive</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Initial deposit</span><strong style={{color:C.orange}}>₦200,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Initial deposit</span><strong style={{color:C.orange}}>₦200,000 – ₦400,000</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Deposit spread</span><strong>3 months</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Weekly remittance</span><strong>₦40,000 / week</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>45 weeks</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total HP payments</span><strong>₦1,800,000</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.orange}}>₦2,000,000</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦100,000 / Referral of new Bike Applicant</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Weekly remittance</span><strong>₦40,000 – ₦55,000 / week</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>45 – 78 weeks</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total HP payments</span><strong>₦1,800,000 – ₦4,290,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.orange}}>₦2,000,000 – ₦4,690,000</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦50,000 – ₦100,000 / Referral of new Bike Applicant</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦200,000 / Referral of new Keke Applicant</strong></div>
                   </>):(<>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP Package Value</span><strong>₦7,620,000</strong></div>
@@ -866,7 +866,7 @@ export default function App(){
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>HP term</span><strong>78 weeks</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total HP payments</span><strong>₦7,020,000</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Total to own</span><strong style={{color:C.green}}>₦7,620,000</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦100,000 / Referral of new Bike Applicant</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #333",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦50,000 – ₦100,000 / Referral of new Bike Applicant</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",fontSize:13}}><span style={{color:"#AAA"}}>Discount on HP Balance</span><strong style={{color:C.green}}>₦200,000 / Referral of new Keke Applicant</strong></div>
                   </>)}
                   {riderPortal.hp_discount_balance>0&&(
@@ -1030,7 +1030,7 @@ export default function App(){
                       <div class="field"><label>Applicant Phone Number</label><div class="line"></div></div>
                       <div class="field"><label>Applicant Email Address</label><div class="line"></div></div>
                       <div class="field"><label>Applicant Referral Code</label><div class="line">${riderPortal.referral_code}</div></div>
-                      <div class="field"><label>Vehicle Type Applied For</label><div class="line">${{bike:"Dispatch Bike (HP Value: ₦2,000,000)",keke:"Keke Tricycle (HP Value: ₦7,620,000)",mini:"Mini Korope 4-Wheel (HP Value: ₦12,500,000)",full:"Full Bus / Cab 4-Wheel (HP Value: ₦19,240,000)"}[riderPortal.vehicle_type]||riderPortal.vehicle_type}</div></div>
+                      <div class="field"><label>Vehicle Type Applied For</label><div class="line">${{bike:"Dispatch Bike (HP Value: ₦2,000,000 – ₦4,690,000)",keke:"Keke Tricycle (HP Value: ₦7,620,000)",mini:"Mini Korope 4-Wheel (HP Value: ₦12,500,000)",full:"Full Bus / Cab 4-Wheel (HP Value: ₦19,240,000)"}[riderPortal.vehicle_type]||riderPortal.vehicle_type}</div></div>
                     </div>
                     <div class="section"><h3>Guarantor Details (to be filled by the guarantor)</h3>
                       <div class="field"><label>Full Name of Guarantor</label><div class="line"></div></div>
@@ -1476,8 +1476,8 @@ export default function App(){
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10,marginBottom:12,fontSize:12}}>
                       <div><span style={{color:C.grey}}>Units: </span><strong>{inv.units}</strong></div>
-                      <div><span style={{color:C.grey}}>Total investment: </span><strong>₦{(inv.units*(inv.package_type==="bike"?1500000:4500000)).toLocaleString()}</strong></div>
-                      <div><span style={{color:C.grey}}>Total return: </span><strong>₦{(inv.units*(inv.package_type==="bike"?1950000:5720000)).toLocaleString()}</strong></div>
+                      <div><span style={{color:C.grey}}>Total investment: </span><strong>{inv.package_type==="bike"?`₦${(inv.units*1200000).toLocaleString()} – ₦${(inv.units*3000000).toLocaleString()}`:`₦${(inv.units*4500000).toLocaleString()}`}</strong></div>
+                      <div><span style={{color:C.grey}}>Total return: </span><strong>{inv.package_type==="bike"?`₦${(inv.units*1440000).toLocaleString()} – ₦${(inv.units*3510000).toLocaleString()}`:`₦${(inv.units*5720000).toLocaleString()}`}</strong></div>
                       <div><span style={{color:C.grey}}>Applied: </span><strong>{new Date(inv.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})}</strong></div>
                     </div>
                     {inv.notes&&<div style={{fontSize:12,color:C.grey,marginBottom:12,background:C.offwhite,padding:"8px 12px",borderRadius:6}}>Notes: {inv.notes}</div>}
@@ -2247,18 +2247,18 @@ export default function App(){
                     <div className="v-desc">Brand new Bajaj, TVS or Qlink 200cc. Insurance and plate registration included.</div>
                   </div>
                   <div className="v-body">
-                    <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val" style={{color:C.grey}}>₦1,200,000</span></div>
-                    <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦2,000,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Current Market Value</span><span className="v-val" style={{color:C.grey}}>₦1,200,000 – ₦3,000,000</span></div>
+                    <div className="v-row"><span className="v-lbl">HP Package Value</span><span className="v-val">₦2,000,000 – ₦4,690,000</span></div>
                     <div className="v-row"><span className="v-lbl">Insurance & Plate License Reg</span><span className="v-val">Inclusive</span></div>
-                    <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val hi">₦200,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Initial deposit</span><span className="v-val hi">₦200,000 – ₦400,000</span></div>
                     <div className="v-row"><span className="v-lbl">Deposit spread</span><span className="v-val">3 months</span></div>
-                    <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦40,000 / week</span></div>
-                    <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">45 weeks</span></div>
-                    <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦1,800,000</span></div>
-                    <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val hi">₦2,000,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Weekly remittance</span><span className="v-val">₦40,000 – ₦55,000 / week</span></div>
+                    <div className="v-row"><span className="v-lbl">HP term</span><span className="v-val">45 – 78 weeks</span></div>
+                    <div className="v-row"><span className="v-lbl">Total HP payments</span><span className="v-val">₦1,800,000 – ₦4,290,000</span></div>
+                    <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val hi">₦2,000,000 – ₦4,690,000</span></div>
                     <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
                       <div style={{fontSize:11,fontWeight:700,color:C.orange,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Discounts</div>
-                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦50,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦50,000 – ₦100,000 discount off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦150,000 discount off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 discount off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 discount off your HP</span></div>
@@ -2290,7 +2290,7 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:C.green,fontSize:16}}>₦7,620,000</span></div>
                     <div style={{borderTop:"1.5px solid #E8E5E0",margin:"10px 0 6px",paddingTop:8}}>
                       <div style={{fontSize:11,fontWeight:700,color:C.green,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Discounts</div>
-                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦50,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦50,000 – ₦100,000 discount off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#1A7A3C"}}>₦150,000 discount off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦200,000 discount off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#1A7A3C"}}>₦250,000 discount off your HP</span></div>
@@ -2333,7 +2333,7 @@ export default function App(){
               <div className="ref-box">
                 <p style={{color:"#AAA",fontSize:14,lineHeight:1.8,marginBottom:16}}>For every person you successfully refer to RideTrust, you receive a discount off your own outstanding HP balance. The more you refer, the less you owe.</p>
                 <div className="ref-grid">
-                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Bike rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦50,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Bike rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦50,000 – ₦100,000</strong> taken off your own outstanding HP balance (amount depends on bike type — Okada or Dispatch) as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🛺 Refer a Keke rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦150,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🚐 Refer a Minibus driver for Hire Purchase</div><div className="ref-item-b">Get <strong>₦200,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🚌 Refer a Full Bus / Cab driver for Hire Purchase</div><div className="ref-item-b">Get <strong>₦250,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
@@ -2410,7 +2410,7 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:"#6366F1",fontSize:16}}>₦12,500,000</span></div>
                     <div style={{borderTop:"1.5px solid #C7D2FE",margin:"10px 0 6px",paddingTop:8}}>
                       <div style={{fontSize:11,fontWeight:700,color:"#4338CA",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Discounts</div>
-                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#3730A3"}}>₦50,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#3730A3"}}>₦50,000 – ₦100,000 discount off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#3730A3"}}>₦150,000 discount off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#3730A3"}}>₦200,000 discount off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#3730A3"}}>₦250,000 discount off your HP</span></div>
@@ -2442,7 +2442,7 @@ export default function App(){
                     <div className="v-row"><span className="v-lbl">Total to own</span><span className="v-val" style={{color:"#DC2626",fontSize:16}}>₦19,240,000</span></div>
                     <div style={{borderTop:"1.5px solid #FECACA",margin:"10px 0 6px",paddingTop:8}}>
                       <div style={{fontSize:11,fontWeight:700,color:"#DC2626",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🎁 Rider/Driver Referral Discounts</div>
-                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#991B1B"}}>₦50,000 discount off your HP</span></div>
+                      <div className="v-row"><span className="v-lbl">Refer a Bike rider</span><span className="v-val" style={{color:"#991B1B"}}>₦50,000 – ₦100,000 discount off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Keke rider</span><span className="v-val" style={{color:"#991B1B"}}>₦150,000 discount off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Minibus driver</span><span className="v-val" style={{color:"#991B1B"}}>₦200,000 discount off your HP</span></div>
                       <div className="v-row"><span className="v-lbl">Refer a Full Bus/Cab driver</span><span className="v-val" style={{color:"#991B1B"}}>₦250,000 discount off your HP</span></div>
@@ -2485,7 +2485,7 @@ export default function App(){
               <div className="ref-box">
                 <p style={{color:"#AAA",fontSize:14,lineHeight:1.8,marginBottom:16}}>For every person you successfully refer to RideTrust, you receive a discount off your own outstanding HP balance. The more you refer, the less you owe.</p>
                 <div className="ref-grid">
-                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Bike rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦50,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
+                  <div className="ref-item"><div className="ref-item-t">🏍️ Refer a Bike rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦50,000 – ₦100,000</strong> taken off your own outstanding HP balance (amount depends on bike type — Okada or Dispatch) as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🛺 Refer a Keke rider for Hire Purchase</div><div className="ref-item-b">Get <strong>₦150,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🚐 Refer a Minibus driver for Hire Purchase</div><div className="ref-item-b">Get <strong>₦200,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
                   <div className="ref-item"><div className="ref-item-t">🚌 Refer a Full Bus / Cab driver for Hire Purchase</div><div className="ref-item-b">Get <strong>₦250,000</strong> taken off your own outstanding HP balance as soon as the person you referred pays their first deposit and becomes a committed subscriber. Terms & Conditions apply.</div></div>
@@ -2674,7 +2674,7 @@ export default function App(){
               <p className="sec-body">As a Route Captain, you need to understand what your riders and drivers are on — their weekly targets, their deposit obligations, and their ownership timeline.</p>
               <div className="v-grid" style={{marginTop:24}}>
                 {[
-                  {e:"🏍️",n:"Dispatch Bike",dep:"₦200,000",wkly:"₦40,000/week",term:"45 weeks",cap5:"₦2,000/week",cap10:"₦4,000/week"},
+                  {e:"🏍️",n:"Dispatch Bike",dep:"₦200,000 – ₦400,000",wkly:"₦40,000 – ₦55,000/week",term:"45 – 78 weeks",cap5:"₦2,000 – ₦2,750/week",cap10:"₦4,000 – ₦5,500/week"},
                   {e:"🛺",n:"Keke Tricycle",dep:"₦600,000",wkly:"₦90,000/week",term:"78 weeks",cap5:"₦4,500/week",cap10:"₦9,000/week"},
                   {e:"🚗",n:"Mini Korope",dep:"₦800,000",wkly:"₦90,000/week",term:"130 weeks",cap5:"₦4,500/week",cap10:"₦9,000/week"},
                   {e:"🚌",n:"Full Bus / Cab",dep:"₦1,000,000",wkly:"₦120,000/week",term:"152 weeks",cap5:"₦6,000/week",cap10:"₦12,000/week"},
@@ -2743,16 +2743,16 @@ export default function App(){
                   <div className="inv-head" style={{background:C.blue}}>
                     <div style={{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",opacity:.8,marginBottom:8}}>Two Wheels Package</div>
                     <div style={{fontSize:40,marginBottom:8}}>🏍️</div>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,textTransform:"uppercase"}}>Dispatch Bike</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,textTransform:"uppercase"}}>Okada / Dispatch Bike</div>
                   </div>
                   <div className="inv-body">
-                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦1,200,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">45 weeks</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦32,000 / week</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit">₦1,440,000</span></div>
-                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit">₦240,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your investment</span><span className="inv-val">₦1,200,000 – ₦3,000,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Investment term</span><span className="inv-val">45 – 78 weeks</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Weekly investor accrual</span><span className="inv-val">₦32,000 – ₦45,000 / week</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Total return</span><span className="inv-profit">₦1,440,000 – ₦3,510,000</span></div>
+                    <div className="inv-row"><span className="inv-lbl">Your net profit</span><span className="inv-profit">₦240,000 – ₦510,000</span></div>
                     <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:6,padding:"10px 12px",marginTop:10,fontSize:12,color:"#1E40AF",lineHeight:1.7}}>
-                      ₦32,000 × 45 weeks pooled monthly to your account. Zero operations on your end.
+                      (₦32,000 × 45 weeks) to (₦45,000 × 78 weeks) pooled monthly to your account. Zero operations on your end.
                     </div>
                     <button className="btn btn-full" style={{background:C.blue,color:C.white,marginTop:14}} onClick={()=>setModal("invest-bike")}>Invest — Two Wheels</button>
                   </div>
@@ -3101,13 +3101,13 @@ export default function App(){
             {modal==="invest-bike"&&(
               <>
                 <div className="modal-h cd">🏍️ Two Wheels Investment</div>
-                <div className="modal-s">Invest ₦1,200,000 · Receive ₦1,440,000 over 45 weeks · Net profit ₦240,000<br/>RoyalTech will contact you within 24 hours.</div>
+                <div className="modal-s">Invest ₦1,200,000 – ₦3,000,000 · Earn ₦1,440,000 – ₦3,510,000 over 45 – 78 weeks · Net profit ₦240,000 – ₦510,000<br/>Exact terms confirmed by RoyalTech within 24 hours based on bike type.</div>
                 <div className="field"><label>Full Name *</label><input placeholder="Your full legal name" onChange={e=>setF("name",e.target.value)}/></div>
                 <div className="field"><label>Phone Number *</label><input type="tel" placeholder="+234 xxx xxx xxxx" onChange={e=>setF("phone",e.target.value)}/></div>
                 <div className="field"><label>Email Address *</label><input type="email" placeholder="your@email.com" onChange={e=>setF("email",e.target.value)}/></div>
                 <div className="field"><label>How many units?</label>
                   <select onChange={e=>setF("units",e.target.value)}>
-                    <option value="">Select number of units</option>{[1,2,3,4,5,6,7,8,9,10].map(n=><option key={n}>{n} unit{n>1?"s":""} — ₦{(n*1260000).toLocaleString()}</option>)}
+                    <option value="">Select number of units</option>{[1,2,3,4,5,6,7,8,9,10].map(n=><option key={n}>{n} unit{n>1?"s":""} — ₦{(n*1200000).toLocaleString()} – ₦{(n*3000000).toLocaleString()}</option>)}
                   </select>
                 </div>
                 <div className="field">
