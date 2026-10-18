@@ -2576,7 +2576,7 @@ export default function App(){
                 <div className="lma-earn" style={{background:"#1E1B4B"}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,marginBottom:4,color:C.white}}>🎁 Rider/Driver Referral Bonus</div>
                   <div style={{fontSize:11,color:"#A5B4FC",marginBottom:14,lineHeight:1.5}}>Refer a rider or driver who takes delivery of their vehicle and makes their first remittance — earn a one-time bonus, and they automatically join your fleet.</div>
-                  <div className="earn-row"><span className="earn-lbl">🏍️ Refer a bike rider</span><span className="earn-val">₦50,000</span></div>
+                  <div className="earn-row"><span className="earn-lbl">🏍️ Refer a bike rider</span><span className="earn-val">₦50,000 – ₦100,000</span></div>
                   <div className="earn-row"><span className="earn-lbl">🛺 Refer a keke rider</span><span className="earn-val">₦150,000</span></div>
                   <div className="earn-row"><span className="earn-lbl">🚗 Refer a mini korope driver</span><span className="earn-val">₦200,000</span></div>
                   <div className="earn-row"><span className="earn-lbl">🚌 Refer a full bus / cab driver</span><span className="earn-val">₦250,000</span></div>
@@ -2584,7 +2584,7 @@ export default function App(){
                     <strong style={{color:C.white}}>Note:</strong> The referred rider is auto-assigned to your fleet — they are your responsibility from day one. Each referral moves you one step closer to Commander tier.
                   </div>
                   <div style={{marginTop:12,fontSize:11,color:"#64748B",lineHeight:1.6,borderTop:"1px solid #334155",paddingTop:10}}>
-                    ✅ Redeemable after the referred rider takes delivery and makes their first weekly remittance.
+                    ✅ Redeemable after the referred rider or driver takes delivery and makes their first weekly remittance.
                   </div>
                 </div>
 
