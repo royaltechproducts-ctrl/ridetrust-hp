@@ -2437,13 +2437,14 @@ export default function App(){
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:24}}>
                   {[
                     {label:"Total Riders",value:riders.length,color:C.black},
-                    {label:"Bike Applications",value:riders.filter(r=>r.vehicle_type==="bike").length,color:C.black},
+                    {label:"Okada Applications",value:riders.filter(r=>r.vehicle_type==="okada").length,color:C.orange},
+                    {label:"Dispatch Bike Apps",value:riders.filter(r=>r.vehicle_type==="dispatch"||r.vehicle_type==="bike").length,color:C.black},
                     {label:"Keke Applications",value:riders.filter(r=>r.vehicle_type==="keke").length,color:C.green},
                     {label:"Mini (Korope)",value:riders.filter(r=>r.vehicle_type==="mini").length,color:"#4338CA"},
                     {label:"Full Bus/Cab",value:riders.filter(r=>r.vehicle_type==="full").length,color:"#991B1B"},
-                    {label:"Active Riders",value:riders.filter(r=>r.status==="active").length,color:C.orange},
-                    {label:"Agent Applications",value:agents.length,color:C.blue},
-                    {label:"Approved Agents",value:agents.filter(a=>a.status==="approved").length,color:C.green},
+                    {label:"Active Riders",value:riders.filter(r=>r.rider_status==="active_rider").length,color:C.orange},
+                    {label:"LMA Applications",value:captains.length,color:C.blue},
+                    {label:"Approved LMAs",value:captains.filter(a=>a.app_status==="approved").length,color:C.green},
                     {label:"Investor Enquiries",value:investors.length,color:C.purple},
                     {label:"Active Investors",value:investors.filter(i=>i.status==="active").length,color:C.green},
                   ].map(s=>(
@@ -2558,7 +2559,7 @@ export default function App(){
                   );
 
                   // Per-LMA links
-                  const lmaLinks = agents.filter(a=>a.status==="approved").map(a=>({
+                  const lmaLinks = captains.filter(a=>a.app_status==="approved").map(a=>({
                     id: a.id,
                     name: a.name,
                     riderUrl:  `${BASE_URL}/?ref=lma&id=${a.id}&to=riders`,
@@ -2647,7 +2648,7 @@ export default function App(){
                         {refVisits.length===0&&!refVisitsErr&&<div style={{color:C.grey,fontSize:12,textAlign:"center",padding:16}}>No visits recorded yet. Share the links above to get started.</div>}
                         {refVisits.slice(0,50).map(v=>{
                           const who = v.ref_type==="admin" ? "Admin link" :
-                            v.ref_type==="lma"  ? (agents.find(a=>a.id===v.ref_id)?.name||"LMA (unknown)")+" (LMA)" :
+                            v.ref_type==="lma"  ? (captains.find(a=>a.id===v.ref_id)?.full_name||"LMA (unknown)")+" (LMA)" :
                             v.ref_type==="rider"? (riders.find(r=>r.id===v.ref_id)?.name||"Rider (unknown)")+" (Rider)" : v.ref_type;
                           const dest = v.destination==="riders"?"Riders page":v.destination==="lma"?"LMA page":"Investors page";
                           const when = new Date(v.visited_at).toLocaleString("en-NG",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
