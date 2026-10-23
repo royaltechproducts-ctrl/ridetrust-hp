@@ -1,20 +1,15 @@
 {
-  "rewrites": [
+  "routes": [
     {
-      "source": "/og-:path*.jpg",
-      "destination": "/og-:path*.jpg"
+      "src": "/og-[^/]+\\.jpg",
+      "dest": "/$0"
     },
     {
-      "source": "/drivers",
-      "destination": "/drivers/index.html"
+      "handle": "filesystem"
     },
     {
-      "source": "/fleet-manager",
-      "destination": "/fleet-manager/index.html"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
