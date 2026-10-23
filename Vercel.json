@@ -5,6 +5,14 @@
       "destination": "/og-:path*.jpg"
     },
     {
+      "source": "/drivers",
+      "destination": "/drivers/index.html"
+    },
+    {
+      "source": "/fleet-manager",
+      "destination": "/fleet-manager/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
