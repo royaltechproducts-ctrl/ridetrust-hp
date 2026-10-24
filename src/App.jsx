@@ -2997,7 +2997,7 @@ export default function App(){
             <h1 className="hero-h1 cd">Route Captain<br/><span style={{color:"#A78BFA"}}>& Commander</span></h1>
             <div className="hero-sub" style={{color:"#C4B5FD"}}>Become Our Fleet Managers on wheels — monitoring, motivating, and protecting the RideTrust fleet on your route</div>
             <p style={{fontSize:15,color:"#A5B4FC",maxWidth:560,margin:"0 auto 28px",lineHeight:1.8}}>
-              Already plying the route? Already own a vehicle? Step up as a Route Captain and earn commission on every rider or driver you manage for us. Build your fleet. Graduate to Route Commander. The road is your office — and now it pays double.
+              Already plying the route? Already own a vehicle? Step up as a Route Captain and earn commission on every rider or driver you manage for us. Build your fleet. Graduate to Route Commander. The route is your daily income — and now you can earn so much extra on it.
             </p>
             {/* Tier cards */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,maxWidth:500,margin:"0 auto 36px",textAlign:"left"}}>
